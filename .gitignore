@@ -1,0 +1,14 @@
+Debug/
+Release/
+
+*.o
+*.obj
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.lst
+
+.metadata/
