@@ -6,6 +6,7 @@
  */
 
 #include "utils.h"
+#include <math.h>
 
 void Set_Pin_Output(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
 {
@@ -29,4 +30,9 @@ void delay(TIM_HandleTypeDef *htim, uint16_t us)
 {
 	__HAL_TIM_SET_COUNTER(htim, 0); // set the counter value a 0
 	while (__HAL_TIM_GET_COUNTER(htim) < us); // wait for the counter to reach the us input in the parameter
+}
+
+int16_t tempToFixed(float temp)
+{
+    return (int16_t)lroundf(temp * 10.0f);
 }

@@ -32,6 +32,9 @@
 #include "drivers/lcd1602.h"
 #include <stdbool.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include "utils.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,6 +45,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define LCD_BACKLIGHT 0x08
+#define UART_RX_LOG_SIZE 128U
+#define UART_CMD_LINE_SIZE 64U
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,6 +57,18 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+static uint8_t rx_byte;
+static uint8_t rx_log[UART_RX_LOG_SIZE];
+static char uart_cmd_line[UART_CMD_LINE_SIZE];
+static uint16_t uart_cmd_pos = 0;
+static volatile uint16_t rx_log_head = 0;
+static volatile uint16_t rx_log_tail = 0;
+static volatile uint32_t rx_byte_count = 0;
+static volatile uint32_t rx_error_count = 0;
+static volatile uint32_t rx_overflow_count = 0;
+static int16_t min_temp = 100; // 18.0°C
+static int16_t max_temp = 270; // 26.0°C
+
 static lcd1602_t lcd =
 {
     .i2c = &hi2c1,
@@ -83,7 +100,11 @@ static ds3231_t ds3231 =
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+static void log_uart_rx_byte(uint8_t byte);
+static void process_uart_rx(void);
+static void process_uart_rx_byte(uint8_t byte);
+static void process_uart_command(const char *line);
+static bool parse_temp_command(const char *line, const char *command, int16_t *temp);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -102,6 +123,165 @@ static inline uint32_t TempToPWM(float x)
     return (uint32_t)v;
 }
 
+static void log_uart_rx_byte(uint8_t byte)
+{
+	uint16_t next_head = (uint16_t)(rx_log_head + 1U);
+
+	if (next_head >= UART_RX_LOG_SIZE)
+	{
+		next_head = 0U;
+	}
+
+	if (next_head == rx_log_tail)
+	{
+		rx_overflow_count++;
+		return;
+	}
+
+	rx_log[rx_log_head] = byte;
+	rx_log_head = next_head;
+}
+
+static void process_uart_rx(void)
+{
+	static uint32_t printed_error_count = 0;
+	static uint32_t printed_overflow_count = 0;
+
+	while (rx_log_tail != rx_log_head)
+	{
+		uint8_t byte = rx_log[rx_log_tail];
+
+		rx_log_tail = (uint16_t)(rx_log_tail + 1U);
+		if (rx_log_tail >= UART_RX_LOG_SIZE)
+		{
+			rx_log_tail = 0U;
+		}
+
+		process_uart_rx_byte(byte);
+	}
+
+	if (printed_error_count != rx_error_count)
+	{
+		printed_error_count = rx_error_count;
+		printf("[USART1] RX errors: %lu\r\n", rx_error_count);
+	}
+
+	if (printed_overflow_count != rx_overflow_count)
+	{
+		printed_overflow_count = rx_overflow_count;
+		printf("[USART1] RX log overflows: %lu\r\n", rx_overflow_count);
+	}
+}
+
+static void process_uart_rx_byte(uint8_t byte)
+{
+	if (byte == '\r' || byte == '\n')
+	{
+		if (uart_cmd_pos > 0U)
+		{
+			uart_cmd_line[uart_cmd_pos] = '\0';
+			process_uart_command(uart_cmd_line);
+			uart_cmd_pos = 0U;
+		}
+
+		return;
+	}
+
+	if (uart_cmd_pos < (UART_CMD_LINE_SIZE - 1U))
+	{
+		uart_cmd_line[uart_cmd_pos++] = (char)byte;
+	}
+	else
+	{
+		uart_cmd_pos = 0U;
+		printf("[USART1] Command too long, dropping buffer\r\n");
+	}
+}
+
+static void process_uart_command(const char *line)
+{
+	int16_t temp;
+
+	printf("[USART1] Command: %s\r\n", line);
+
+	if (parse_temp_command(line, "SET_MAX_TEMP", &temp))
+	{
+		max_temp = temp;
+		printf("[USART1] SET_MAX_TEMP = %d (%d.%d C)\r\n",
+				temp,
+				temp / 10,
+				abs(temp % 10));
+	}
+	else if (parse_temp_command(line, "SET_MIN_TEMP", &temp))
+	{
+		min_temp = temp;
+		printf("[USART1] SET_MIN_TEMP = %d (%d.%d C)\r\n",
+				temp,
+				temp / 10,
+				abs(temp % 10));
+	}
+	else
+	{
+		printf("[USART1] Unknown command\r\n");
+	}
+}
+
+static bool parse_temp_command(const char *line, const char *command, int16_t *temp)
+{
+	const char *p = line;
+	size_t command_len = strlen(command);
+	uint32_t value = 0U;
+	bool has_digit = false;
+
+	while (*p == ' ' || *p == '\t')
+	{
+		p++;
+	}
+
+	if (strncmp(p, command, command_len) != 0)
+	{
+		return false;
+	}
+
+	p += command_len;
+
+	if (*p != ' ' && *p != '\t')
+	{
+		return false;
+	}
+
+	while (*p == ' ' || *p == '\t')
+	{
+		p++;
+	}
+
+	while (*p >= '0' && *p <= '9')
+	{
+		has_digit = true;
+		value = (value * 10U) + (uint32_t)(*p - '0');
+
+		if (value > INT16_MAX)
+		{
+			return false;
+		}
+
+		p++;
+	}
+
+	while (*p == ' ' || *p == '\t')
+	{
+		p++;
+	}
+
+	if (!has_digit || *p != '\0')
+	{
+		return false;
+	}
+
+	*temp = (int16_t)value;
+	return true;
+}
+
 void update(lcd1602_t *lcd, hw479_t *hw479, ds3231_t *ds3231) {
 	ds3231_time_t t = ds3231_get_time(ds3231);
 	lcd_1602_clear(lcd);
@@ -117,17 +297,19 @@ void update(lcd1602_t *lcd, hw479_t *hw479, ds3231_t *ds3231) {
 	int frac = (int)((temp - whole) * 10);
 	lcd_1602_printf(lcd, "%d.%d C", whole, frac);
 
+	int16_t tempInt = tempToFixed(temp);
+
 	uint32_t v = TempToPWM(fabs(temp));
 
-	printf("Temperature = %d.%d C\r\n", whole, frac);
-	printf("Time = %02d:%02d %02d/%02d/20%02d\r\n", t.hour, t.minutes, t.dayofmonth, t.month, t.year);
+//	printf("Temperature = %d.%d C\r\n", whole, frac);
+//	printf("Time = %02d:%02d %02d/%02d/20%02d\r\n", t.hour, t.minutes, t.dayofmonth, t.month, t.year);
 
-	if (temp > 0) {
-		hw479_set_colors(hw479, v, 0, 0);
-	} else if (temp < 0) {
-		hw479_set_colors(hw479, 0, 0, v);
+	if (tempInt >= max_temp) {
+		hw479_set_colors(hw479, 999, 0, 0);
+	} else if (tempInt <= min_temp) {
+		hw479_set_colors(hw479, 0, 0, 999);
 	} else  {
-		hw479_set_colors(hw479, 100, 100, 100);
+		hw479_set_colors(hw479, 0, 0, 0);
 	}
 }
 /* USER CODE END 0 */
@@ -168,6 +350,16 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  if (HAL_UART_Receive_IT(&huart1, &rx_byte, 1) != HAL_OK)
+  {
+      printf("USART1 RX IT start failed\r\n");
+      Error_Handler();
+  }
+  else
+  {
+      printf("USART1 RX IT started\r\n");
+  }
+
   lcd_1602_init(&lcd);
   lcd_1602_backlight_on(&lcd);
   lcd_1602_print(&lcd, "Initializing");
@@ -182,10 +374,15 @@ int main(void)
 
   HAL_Delay(1000);
 
+  printf("-------------------------\r\n");
+
   while (1)
   {
+	process_uart_rx();
     update(&lcd, &hw479, &ds3231);
+	process_uart_rx();
 	HAL_Delay(750);
+	process_uart_rx();
 
     /* USER CODE END WHILE */
 
@@ -248,6 +445,19 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if (huart->Instance == USART1)
+    {
+		rx_byte_count++;
+		log_uart_rx_byte(rx_byte);
+
+        if (HAL_UART_Receive_IT(&huart1, &rx_byte, 1) != HAL_OK)
+        {
+        	rx_error_count++;
+        }
+    }
+}
 /* USER CODE END 4 */
 
 /**
