@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package device;
+
+// A command sent from the phone to the STM32 through the ESP32 BLE/UART
+// bridge. Exactly one command must be set.
+message DeviceCommand {
+  oneof command {
+    SetMaxTemp set_max_temp = 1;
+    SetMinTemp set_min_temp = 2;
+    SetCurrentTime set_current_time = 3;
+  }
+}
+
+message SetMaxTemp {
+  // Temperature in tenths of a degree Celsius.
+  // Examples: 250 means 25.0 C and 155 means 15.5 C.
+  // Valid range: -32768..32767 (int16). Receivers must reject values outside it.
+  sint32 value = 1;
+}
+
+message SetMinTemp {
+  // Temperature in tenths of a degree Celsius.
+  // Examples: 250 means 25.0 C and 155 means 15.5 C.
+  // Valid range: -32768..32767 (int16). Receivers must reject values outside it.
+  sint32 value = 1;
+}
+
+message SetCurrentTime {
+  // Current time in milliseconds.
+  uint64 value_ms = 1;
+}
