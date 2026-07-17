@@ -73,9 +73,7 @@ class _DevicePageState extends State<DevicePage> {
     final controller = maximum ? _maxController : _minController;
     final tenths = _parseTemperature(controller.text);
     if (tenths == null) {
-      _showMessage(
-        'Enter a temperature from -3276.8 to 3276.7 with one decimal.',
-      );
+      _showMessage('Enter a temperature from -100 to 100 with one decimal.');
       return;
     }
 
@@ -89,11 +87,13 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   Future<void> _sendCurrentTime() async {
-    final milliseconds = DateTime.now().millisecondsSinceEpoch;
+    final now = DateTime.now();
+    final deviceTimeMilliseconds =
+        now.millisecondsSinceEpoch + now.timeZoneOffset.inMilliseconds;
     final command = DeviceCommand(
-      setCurrentTime: SetCurrentTime(valueMs: Int64(milliseconds)),
+      setCurrentTime: SetCurrentTime(valueMs: Int64(deviceTimeMilliseconds)),
     );
-    await _send(command, 'Current time sent: $milliseconds ms');
+    await _send(command, 'Current device time sent');
   }
 
   Future<void> _send(DeviceCommand command, String successMessage) async {

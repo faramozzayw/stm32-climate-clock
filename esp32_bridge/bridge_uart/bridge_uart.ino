@@ -99,7 +99,7 @@ void setup()
   STM32Serial.begin(115200, SERIAL_8N1, RXD, TXD);
 
   // Initialize BLE
-  BLEDevice::init("ESP32_BRIDGE");
+  BLEDevice::init("ClimateClock");
 
   BLEServer *server = BLEDevice::createServer();
   BLEService *service = server->createService(SERVICE_UUID);
