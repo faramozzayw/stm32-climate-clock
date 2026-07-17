@@ -31,7 +31,7 @@
 #include "drivers/ds18b20.h"
 #include "drivers/lcd1602.h"
 #include <math.h>
-#include "uart_commands.h"
+#include "command_receiver/uart_command_receiver.h"
 #include "utils.h"
 /* USER CODE END Includes */
 
@@ -55,7 +55,7 @@
 /* USER CODE BEGIN PV */
 static int16_t min_temp = 100; // 10.0 C
 static int16_t max_temp = 300; // 30.0 C
-static uart_commands_t uart_commands =
+static uart_command_receiver_t command_receiver =
 {
 	.values.min_temp = 100,
 	.values.max_temp = 270,
@@ -113,23 +113,23 @@ static inline uint32_t TempToPWM(float x)
 
 static void apply_uart_commands(void)
 {
-	if (uart_commands.values.min_temp_updated)
+	if (command_receiver.values.min_temp_updated)
 	{
-		min_temp = uart_commands.values.min_temp;
-		uart_commands.values.min_temp_updated = false;
+		min_temp = command_receiver.values.min_temp;
+		command_receiver.values.min_temp_updated = false;
 	}
 
-	if (uart_commands.values.max_temp_updated)
+	if (command_receiver.values.max_temp_updated)
 	{
-		max_temp = uart_commands.values.max_temp;
-		uart_commands.values.max_temp_updated = false;
+		max_temp = command_receiver.values.max_temp;
+		command_receiver.values.max_temp_updated = false;
 	}
 
-	if (uart_commands.values.current_time_updated)
+	if (command_receiver.values.current_time_updated)
 	{
 		ds3231_time_t time;
 
-		if (epoch_ms_to_ds3231_time(uart_commands.values.current_time_ms, &time))
+		if (epoch_ms_to_ds3231_time(command_receiver.values.current_time_ms, &time))
 		{
 			ds3231_set_time(&ds3231, time);
 			printf("RTC set to %02u:%02u:%02u %02u/%02u/20%02u UTC\r\n",
@@ -145,7 +145,7 @@ static void apply_uart_commands(void)
 			printf("SetCurrentTime is outside DS3231 range (2000-2099)\r\n");
 		}
 
-		uart_commands.values.current_time_updated = false;
+		command_receiver.values.current_time_updated = false;
 	}
 }
 
@@ -217,9 +217,10 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  uart_commands_init(&uart_commands, &huart1);
+  uart_command_receiver_init(&command_receiver, &huart1);
 
-  if (HAL_UART_Receive_IT(&huart1, uart_commands_rx_byte_ptr(&uart_commands), 1) != HAL_OK)
+  if (HAL_UART_Receive_IT(&huart1,
+		  uart_command_receiver_rx_byte_ptr(&command_receiver), 1) != HAL_OK)
   {
       printf("USART1 RX IT start failed\r\n");
       Error_Handler();
@@ -247,13 +248,13 @@ int main(void)
 
   while (1)
   {
-	uart_commands_poll(&uart_commands);
+	uart_command_receiver_poll(&command_receiver);
 	apply_uart_commands();
     update(&lcd, &hw479, &ds3231);
-	uart_commands_poll(&uart_commands);
+	uart_command_receiver_poll(&command_receiver);
 	apply_uart_commands();
 	HAL_Delay(750);
-	uart_commands_poll(&uart_commands);
+	uart_command_receiver_poll(&command_receiver);
 	apply_uart_commands();
 
     /* USER CODE END WHILE */
@@ -321,7 +322,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (huart->Instance == USART1)
     {
-		uart_commands_on_rx_complete(&uart_commands);
+		uart_command_receiver_on_rx_complete(&command_receiver);
     }
 }
 /* USER CODE END 4 */
