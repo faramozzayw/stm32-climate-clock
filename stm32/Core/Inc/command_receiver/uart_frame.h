@@ -42,7 +42,9 @@ typedef enum
 } uart_frame_result_t;
 
 void uart_frame_parser_init(uart_frame_parser_t *parser);
-uart_frame_result_t uart_frame_parser_process(uart_frame_parser_t *parser,
-		uint8_t byte, uart_frame_view_t *frame);
+uart_frame_result_t uart_frame_parser_process(
+	uart_frame_parser_t *parser,
+	uint8_t byte,
+	uart_frame_view_t *frame);
 
 #endif /* INC_UART_FRAME_H_ */

@@ -22,8 +22,10 @@ void uart_frame_parser_init(uart_frame_parser_t *parser)
 	parser->received_crc = 0U;
 }
 
-uart_frame_result_t uart_frame_parser_process(uart_frame_parser_t *parser,
-		uint8_t byte, uart_frame_view_t *frame)
+uart_frame_result_t uart_frame_parser_process(
+	uart_frame_parser_t *parser,
+	uint8_t byte,
+	uart_frame_view_t *frame)
 {
 	if (parser == NULL || frame == NULL)
 	{

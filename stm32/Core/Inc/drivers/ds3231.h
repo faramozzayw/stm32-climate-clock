@@ -32,8 +32,14 @@ typedef struct
 
 void ds3231_set_time(ds3231_t *ds3231, ds3231_time_t time);
 ds3231_time_t ds3231_get_time(ds3231_t *ds3231);
+/**
+ * @brief Read temperature in tenths of a degree Celsius.
+ *
+ * The DS3231 quarter-degree value is rounded to the nearest tenth, with
+ * half-tenths rounded away from zero.
+ */
+int16_t ds3231_get_temp_fixed(ds3231_t *ds3231);
 float ds3231_get_temp(ds3231_t *ds3231);
 void ds3231_force_temp_conv(ds3231_t *ds3231);
 
 #endif /* INC_DS3231_H_ */
-

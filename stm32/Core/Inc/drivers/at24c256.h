@@ -18,19 +18,19 @@
 
 typedef enum
 {
-    AT24C256_OK = 0,
-    AT24C256_ERROR,
-    AT24C256_BUSY,
-    AT24C256_TIMEOUT,
-    AT24C256_INVALID_ARGUMENT,
-    AT24C256_OUT_OF_RANGE
+	AT24C256_OK = 0,
+	AT24C256_ERROR,
+	AT24C256_BUSY,
+	AT24C256_TIMEOUT,
+	AT24C256_INVALID_ARGUMENT,
+	AT24C256_OUT_OF_RANGE
 } AT24C256_Status;
 
 typedef struct
 {
-    I2C_HandleTypeDef *i2c;
-    uint8_t address;
-    uint32_t timeout_ms;
+	I2C_HandleTypeDef *i2c;
+	uint8_t address;
+	uint32_t timeout_ms;
 } at24c256_t;
 
 AT24C256_Status at24c256_init(at24c256_t *eeprom, I2C_HandleTypeDef *i2c, uint8_t address, uint32_t timeout_ms);

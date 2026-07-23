@@ -30,7 +30,9 @@ typedef enum
 	DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE,
 } device_command_decode_result_t;
 
-device_command_decode_result_t device_command_decode(const uint8_t *payload,
-		uint16_t payload_length, decoded_device_command_t *command);
+device_command_decode_result_t device_command_decode(
+	const uint8_t *payload,
+	uint16_t payload_length,
+	decoded_device_command_t *command);
 
 #endif /* INC_DEVICE_COMMAND_DECODER_H_ */

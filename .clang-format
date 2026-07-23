@@ -1,0 +1,29 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+# Match the STM32 project style.
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+
+BreakBeforeBraces: Allman
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+# Keep declarations and calls readable without aggressively splitting them.
+ColumnLimit: 0
+BinPackArguments: true
+BinPackParameters: true
+AlignAfterOpenBracket: DontAlign
+
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+IndentCaseLabels: false
+SortIncludes: false
+...

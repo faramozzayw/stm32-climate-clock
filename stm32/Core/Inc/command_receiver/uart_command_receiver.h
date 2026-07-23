@@ -48,8 +48,7 @@ typedef struct
 	uart_command_receiver_values_t values;
 } uart_command_receiver_t;
 
-void uart_command_receiver_init(uart_command_receiver_t *receiver,
-		UART_HandleTypeDef *huart);
+void uart_command_receiver_init(uart_command_receiver_t *receiver, UART_HandleTypeDef *huart);
 void uart_command_receiver_on_rx_complete(uart_command_receiver_t *receiver);
 void uart_command_receiver_poll(uart_command_receiver_t *receiver);
 uint8_t *uart_command_receiver_rx_byte_ptr(uart_command_receiver_t *receiver);

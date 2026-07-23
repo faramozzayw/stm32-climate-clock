@@ -1,7 +1,9 @@
-#include "application.h"
+#include "app/app.h"
 
 #include <stdio.h>
 
+#include "screen.h"
+#include "temperature_indicator.h"
 #include "temperature_settings.h"
 #include "utils.h"
 
@@ -16,7 +18,7 @@
  *
  * @param app Initialized application state.
  */
-static void apply_uart_commands(application_t *app)
+static void apply_uart_commands(app_t *app)
 {
 	uart_command_receiver_values_t *values = &app->command_receiver->values;
 
@@ -52,12 +54,12 @@ static void apply_uart_commands(application_t *app)
 		{
 			ds3231_set_time(app->rtc, time);
 			printf("RTC set to %02u:%02u:%02u %02u/%02u/20%02u UTC\r\n",
-				   (unsigned int)time.hour,
-				   (unsigned int)time.minutes,
-				   (unsigned int)time.seconds,
-				   (unsigned int)time.dayofmonth,
-				   (unsigned int)time.month,
-				   (unsigned int)time.year);
+				(unsigned int)time.hour,
+				(unsigned int)time.minutes,
+				(unsigned int)time.seconds,
+				(unsigned int)time.dayofmonth,
+				(unsigned int)time.month,
+				(unsigned int)time.year);
 		}
 		else
 		{
@@ -68,14 +70,15 @@ static void apply_uart_commands(application_t *app)
 	}
 }
 
-bool application_init(application_t *app,
-					  lcd1602_t *lcd,
-					  hw479_t *hw479,
-					  ds3231_t *rtc,
-					  at24c256_t *eeprom,
-					  I2C_HandleTypeDef *eeprom_i2c,
-					  uart_command_receiver_t *command_receiver,
-					  UART_HandleTypeDef *command_uart)
+bool app_init(
+	app_t *app,
+	lcd1602_t *lcd,
+	hw479_t *hw479,
+	ds3231_t *rtc,
+	at24c256_t *eeprom,
+	I2C_HandleTypeDef *eeprom_i2c,
+	uart_command_receiver_t *command_receiver,
+	UART_HandleTypeDef *command_uart)
 {
 	AT24C256_Status eeprom_status;
 
@@ -94,11 +97,11 @@ bool application_init(application_t *app,
 	app->command_uart = command_uart;
 	app->min_temp = DEFAULT_MIN_TEMP;
 	app->max_temp = DEFAULT_MAX_TEMP;
+	app->temperature_unit = TEMPERATURE_UNIT_CELSIUS;
 	app->eeprom_ready = false;
 
-	lcd_1602_init(app->lcd);
-	lcd_1602_backlight_on(app->lcd);
-	lcd_1602_print(app->lcd, "Initializing");
+	screen_init(app->lcd);
+	temperature_indicator_init(app->hw479);
 
 	eeprom_status = at24c256_init(
 		app->eeprom,
@@ -116,14 +119,14 @@ bool application_init(application_t *app,
 				&app->max_temp))
 		{
 			printf("Loaded temperature settings: min=%d, max=%d\r\n",
-				   (int)app->min_temp,
-				   (int)app->max_temp);
+				(int)app->min_temp,
+				(int)app->max_temp);
 		}
 		else
 		{
 			printf("No valid temperature settings; using defaults: min=%d, max=%d\r\n",
-				   (int)app->min_temp,
-				   (int)app->max_temp);
+				(int)app->min_temp,
+				(int)app->max_temp);
 		}
 	}
 	else
@@ -145,12 +148,10 @@ bool application_init(application_t *app,
 	}
 
 	printf("Command UART RX IT started\r\n");
-	hw479_init(app->hw479);
-
 	return true;
 }
 
-void application_poll(application_t *app)
+void app_poll(app_t *app)
 {
 	if ((app == NULL) || (app->command_receiver == NULL))
 	{
@@ -161,13 +162,10 @@ void application_poll(application_t *app)
 	apply_uart_commands(app);
 }
 
-void application_update(application_t *app)
+void app_update(app_t *app)
 {
 	ds3231_time_t time;
-	float temperature;
-	int whole;
-	int fraction;
-	int16_t fixed_temperature;
+	int16_t temperature;
 
 	if ((app == NULL) || (app->lcd == NULL) ||
 		(app->hw479 == NULL) || (app->rtc == NULL))
@@ -176,43 +174,26 @@ void application_update(application_t *app)
 	}
 
 	time = ds3231_get_time(app->rtc);
-	lcd_1602_clear(app->lcd);
-
-	lcd_1602_cur(app->lcd, 0, 0);
-	lcd_1602_printf(app->lcd,
-				   "%02d:%02d %02d/%02d/20%02d",
-				   time.hour,
-				   time.minutes,
-				   time.dayofmonth,
-				   time.month,
-				   time.year);
-
 	ds3231_force_temp_conv(app->rtc);
+	temperature = ds3231_get_temp_fixed(app->rtc);
 
-	lcd_1602_cur(app->lcd, 1, 0);
-	temperature = ds3231_get_temp(app->rtc);
-	whole = (int)temperature;
-	fraction = (int)((temperature - whole) * 10);
-	lcd_1602_printf(app->lcd, "%d.%d C", whole, fraction);
-
-	fixed_temperature = tempToFixed(temperature);
-
-	if (fixed_temperature >= app->max_temp)
-	{
-		hw479_set_colors(app->hw479, 999, 0, 0);
-	}
-	else if (fixed_temperature <= app->min_temp)
-	{
-		hw479_set_colors(app->hw479, 0, 0, 999);
-	}
-	else
-	{
-		hw479_set_colors(app->hw479, 0, 0, 0);
-	}
+	screen_update(app->lcd, &time, temperature, app->temperature_unit);
+	temperature_indicator_update(app->hw479, temperature, app->min_temp, app->max_temp);
 }
 
-void application_on_uart_rx_complete(application_t *app,
-									 UART_HandleTypeDef *uart)
+void app_set_temperature_unit(app_t *app, temperature_unit_t unit)
+{
+	if ((app == NULL) ||
+		((unit != TEMPERATURE_UNIT_CELSIUS) &&
+			(unit != TEMPERATURE_UNIT_FAHRENHEIT)))
+	{
+		return;
+	}
+
+	app->temperature_unit = unit;
+}
+
+void app_on_uart_rx_complete(app_t *app, UART_HandleTypeDef *uart)
 {
 	if ((app == NULL) || (uart != app->command_uart) ||
 		(app->command_receiver == NULL))

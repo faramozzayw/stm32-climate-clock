@@ -30,3 +30,8 @@ message SetCurrentTime {
   // Current time in milliseconds.
   uint64 value_ms = 1;
 }
+
+message DeviceTelemetry {
+  // Temperature in tenths of a degree Celsius.
+  sint32 current_temp = 1;
+}

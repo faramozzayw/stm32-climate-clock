@@ -18,7 +18,6 @@ typedef struct
 	GPIO_TypeDef *port;
 } ds18b20_t;
 
-
 void ds18b20_init(ds18b20_t *ds18b20);
 uint8_t ds18b20_start(ds18b20_t *ds18b20);
 void ds18b20_write(ds18b20_t *ds18b20, uint8_t data);

@@ -1,5 +1,5 @@
-#ifndef INC_APPLICATION_H_
-#define INC_APPLICATION_H_
+#ifndef INC_APP_APP_H_
+#define INC_APP_APP_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -9,8 +9,9 @@
 #include "drivers/ds3231.h"
 #include "drivers/hw479.h"
 #include "drivers/lcd1602.h"
+#include "utils.h"
 
-#define APPLICATION_UPDATE_INTERVAL_MS 750U
+#define APP_UPDATE_INTERVAL_MS 750U
 
 typedef struct
 {
@@ -22,8 +23,9 @@ typedef struct
 	UART_HandleTypeDef *command_uart;
 	int16_t min_temp;
 	int16_t max_temp;
+	temperature_unit_t temperature_unit;
 	bool eeprom_ready;
-} application_t;
+} app_t;
 
 /**
  * @brief Initialize application devices and load persisted settings.
@@ -39,28 +41,38 @@ typedef struct
  * @return true when required application components initialized successfully.
  *         EEPROM availability is optional and is tracked in the application.
  */
-bool application_init(application_t *app,
-					  lcd1602_t *lcd,
-					  hw479_t *hw479,
-					  ds3231_t *rtc,
-					  at24c256_t *eeprom,
-					  I2C_HandleTypeDef *eeprom_i2c,
-					  uart_command_receiver_t *command_receiver,
-					  UART_HandleTypeDef *command_uart);
+bool app_init(app_t *app,
+	lcd1602_t *lcd,
+	hw479_t *hw479,
+	ds3231_t *rtc,
+	at24c256_t *eeprom,
+	I2C_HandleTypeDef *eeprom_i2c,
+	uart_command_receiver_t *command_receiver,
+	UART_HandleTypeDef *command_uart);
 
 /**
  * @brief Process received commands and apply their requested changes.
  *
  * @param app Initialized application state.
  */
-void application_poll(application_t *app);
+void app_poll(app_t *app);
 
 /**
  * @brief Refresh the clock, temperature display, and temperature indicator.
  *
  * @param app Initialized application state.
  */
-void application_update(application_t *app);
+void app_update(app_t *app);
+
+/**
+ * @brief Select the unit used for temperature display.
+ *
+ * Stored temperatures and thresholds remain in Celsius.
+ *
+ * @param app Initialized application state.
+ * @param unit Celsius or Fahrenheit display unit.
+ */
+void app_set_temperature_unit(app_t *app, temperature_unit_t unit);
 
 /**
  * @brief Forward a completed UART receive interrupt to the application.
@@ -71,7 +83,6 @@ void application_update(application_t *app);
  * @param app Initialized application state.
  * @param uart UART that completed a receive operation.
  */
-void application_on_uart_rx_complete(application_t *app,
-									 UART_HandleTypeDef *uart);
+void app_on_uart_rx_complete(app_t *app, UART_HandleTypeDef *uart);
 
-#endif /* INC_APPLICATION_H_ */
+#endif /* INC_APP_APP_H_ */

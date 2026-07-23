@@ -7,11 +7,12 @@
 static void log_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
 static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
 static void apply_decoded_command(uart_command_receiver_t *commands,
-		const decoded_device_command_t *command);
+	const decoded_device_command_t *command);
 static void print_temperature(const char *command, int16_t temperature);
 
-void uart_command_receiver_init(uart_command_receiver_t *commands,
-		UART_HandleTypeDef *huart)
+void uart_command_receiver_init(
+	uart_command_receiver_t *commands,
+	UART_HandleTypeDef *huart)
 {
 	if (commands == NULL)
 	{
@@ -90,36 +91,36 @@ void uart_command_receiver_poll(uart_command_receiver_t *commands)
 		commands->stats.rx_rearm_error_count)
 	{
 		commands->stats.last_reported_rx_rearm_error_count =
-				commands->stats.rx_rearm_error_count;
+			commands->stats.rx_rearm_error_count;
 		printf("[USART1] RX errors: %lu\r\n",
-				(unsigned long)commands->stats.rx_rearm_error_count);
+			(unsigned long)commands->stats.rx_rearm_error_count);
 	}
 
 	if (commands->stats.last_reported_rx_overflow_count !=
 		commands->stats.rx_overflow_count)
 	{
 		commands->stats.last_reported_rx_overflow_count =
-				commands->stats.rx_overflow_count;
+			commands->stats.rx_overflow_count;
 		printf("[USART1] RX buffer overflows: %lu\r\n",
-				(unsigned long)commands->stats.rx_overflow_count);
+			(unsigned long)commands->stats.rx_overflow_count);
 	}
 
 	if (commands->stats.last_reported_frame_error_count !=
 		commands->stats.frame_error_count)
 	{
 		commands->stats.last_reported_frame_error_count =
-				commands->stats.frame_error_count;
+			commands->stats.frame_error_count;
 		printf("[USART1] UART frame errors: %lu\r\n",
-				(unsigned long)commands->stats.frame_error_count);
+			(unsigned long)commands->stats.frame_error_count);
 	}
 
 	if (commands->stats.last_reported_protobuf_decode_error_count !=
 		commands->stats.protobuf_decode_error_count)
 	{
 		commands->stats.last_reported_protobuf_decode_error_count =
-				commands->stats.protobuf_decode_error_count;
+			commands->stats.protobuf_decode_error_count;
 		printf("[USART1] Protobuf decode errors: %lu\r\n",
-				(unsigned long)commands->stats.protobuf_decode_error_count);
+			(unsigned long)commands->stats.protobuf_decode_error_count);
 	}
 }
 
@@ -146,7 +147,7 @@ static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte)
 {
 	uart_frame_view_t frame;
 	uart_frame_result_t frame_result = uart_frame_parser_process(
-			&commands->frame_parser, byte, &frame);
+		&commands->frame_parser, byte, &frame);
 
 	if (frame_result == UART_FRAME_ERROR)
 	{
@@ -169,7 +170,7 @@ static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte)
 }
 
 static void apply_decoded_command(uart_command_receiver_t *commands,
-		const decoded_device_command_t *command)
+	const decoded_device_command_t *command)
 {
 	switch (command->type)
 	{
@@ -203,8 +204,8 @@ static void print_temperature(const char *command, int16_t temperature)
 	uint32_t magnitude = (uint32_t)(signed_value < 0 ? -signed_value : signed_value);
 
 	printf("[USART1] %s = %s%lu.%lu C\r\n",
-			command,
-			signed_value < 0 ? "-" : "",
-			(unsigned long)(magnitude / 10U),
-			(unsigned long)(magnitude % 10U));
+		command,
+		signed_value < 0 ? "-" : "",
+		(unsigned long)(magnitude / 10U),
+		(unsigned long)(magnitude % 10U));
 }

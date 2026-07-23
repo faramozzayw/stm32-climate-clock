@@ -14,9 +14,9 @@
 
 typedef struct
 {
-    I2C_HandleTypeDef *i2c;
-    uint8_t addr;
-    uint8_t state;
+	I2C_HandleTypeDef *i2c;
+	uint8_t addr;
+	uint8_t state;
 } lcd1602_t;
 
 // public API

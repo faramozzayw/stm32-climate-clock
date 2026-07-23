@@ -6,8 +6,10 @@
 #include "device.pb.h"
 #include "pb_decode.h"
 
-device_command_decode_result_t device_command_decode(const uint8_t *payload,
-		uint16_t payload_length, decoded_device_command_t *command)
+device_command_decode_result_t device_command_decode(
+	const uint8_t *payload,
+	uint16_t payload_length,
+	decoded_device_command_t *command)
 {
 	device_DeviceCommand protobuf_command = device_DeviceCommand_init_zero;
 	pb_istream_t stream;
@@ -36,7 +38,7 @@ device_command_decode_result_t device_command_decode(const uint8_t *payload,
 		}
 		command->type = DEVICE_COMMAND_SET_MAX_TEMP;
 		command->value.temperature =
-				(int16_t)protobuf_command.command.set_max_temp.value;
+			(int16_t)protobuf_command.command.set_max_temp.value;
 		break;
 
 	case device_DeviceCommand_set_min_temp_tag:
@@ -47,13 +49,13 @@ device_command_decode_result_t device_command_decode(const uint8_t *payload,
 		}
 		command->type = DEVICE_COMMAND_SET_MIN_TEMP;
 		command->value.temperature =
-				(int16_t)protobuf_command.command.set_min_temp.value;
+			(int16_t)protobuf_command.command.set_min_temp.value;
 		break;
 
 	case device_DeviceCommand_set_current_time_tag:
 		command->type = DEVICE_COMMAND_SET_CURRENT_TIME;
 		command->value.current_time_ms =
-				protobuf_command.command.set_current_time.value_ms;
+			protobuf_command.command.set_current_time.value_ms;
 		break;
 
 	case 0U:
