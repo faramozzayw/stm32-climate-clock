@@ -405,9 +405,13 @@ class SetCurrentTime extends $pb.GeneratedMessage {
 class DeviceTelemetry extends $pb.GeneratedMessage {
   factory DeviceTelemetry({
     $core.int? currentTemp,
+    $core.int? minTemp,
+    $core.int? maxTemp,
   }) {
     final result = create();
     if (currentTemp != null) result.currentTemp = currentTemp;
+    if (minTemp != null) result.minTemp = minTemp;
+    if (maxTemp != null) result.maxTemp = maxTemp;
     return result;
   }
 
@@ -426,6 +430,8 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'currentTemp',
         fieldType: $pb.PbFieldType.OS3)
+    ..aI(2, _omitFieldNames ? '' : 'minTemp', fieldType: $pb.PbFieldType.OS3)
+    ..aI(3, _omitFieldNames ? '' : 'maxTemp', fieldType: $pb.PbFieldType.OS3)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -456,6 +462,26 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
   $core.bool hasCurrentTemp() => $_has(0);
   @$pb.TagNumber(1)
   void clearCurrentTemp() => $_clearField(1);
+
+  /// Configured minimum temperature in tenths of a degree Celsius.
+  @$pb.TagNumber(2)
+  $core.int get minTemp => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set minTemp($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMinTemp() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMinTemp() => $_clearField(2);
+
+  /// Configured maximum temperature in tenths of a degree Celsius.
+  @$pb.TagNumber(3)
+  $core.int get maxTemp => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set maxTemp($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMaxTemp() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMaxTemp() => $_clearField(3);
 }
 
 const $core.bool _omitFieldNames =

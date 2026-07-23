@@ -124,9 +124,12 @@ const DeviceTelemetry$json = {
   '1': 'DeviceTelemetry',
   '2': [
     {'1': 'current_temp', '3': 1, '4': 1, '5': 17, '10': 'currentTemp'},
+    {'1': 'min_temp', '3': 2, '4': 1, '5': 17, '10': 'minTemp'},
+    {'1': 'max_temp', '3': 3, '4': 1, '5': 17, '10': 'maxTemp'},
   ],
 };
 
 /// Descriptor for `DeviceTelemetry`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deviceTelemetryDescriptor = $convert.base64Decode(
-    'Cg9EZXZpY2VUZWxlbWV0cnkSIQoMY3VycmVudF90ZW1wGAEgASgRUgtjdXJyZW50VGVtcA==');
+    'Cg9EZXZpY2VUZWxlbWV0cnkSIQoMY3VycmVudF90ZW1wGAEgASgRUgtjdXJyZW50VGVtcBIZCg'
+    'htaW5fdGVtcBgCIAEoEVIHbWluVGVtcBIZCghtYXhfdGVtcBgDIAEoEVIHbWF4VGVtcA==');
