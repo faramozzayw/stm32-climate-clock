@@ -37,6 +37,20 @@ int16_t tempToFixed(float temp)
     return (int16_t)lroundf(temp * 10.0f);
 }
 
+void write_int16_le(uint8_t *destination, int16_t value)
+{
+	uint16_t encoded = (uint16_t)value;
+	destination[0] = (uint8_t)(encoded & 0xFFU);
+	destination[1] = (uint8_t)(encoded >> 8U);
+}
+
+int16_t read_int16_le(const uint8_t *source)
+{
+	uint16_t encoded = (uint16_t)source[0] |
+		((uint16_t)source[1] << 8U);
+	return (int16_t)encoded;
+}
+
 bool epoch_ms_to_ds3231_time(uint64_t epoch_ms, ds3231_time_t *time)
 {
 	static const uint8_t days_per_month[12] =

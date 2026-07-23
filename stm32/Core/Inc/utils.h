@@ -17,6 +17,8 @@ void Set_Pin_Output(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 void Set_Pin_Input(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 void delay(TIM_HandleTypeDef *htim, uint16_t us);
 int16_t tempToFixed(float temp);
+void write_int16_le(uint8_t *destination, int16_t value);
+int16_t read_int16_le(const uint8_t *source);
 bool epoch_ms_to_ds3231_time(uint64_t epoch_ms, ds3231_time_t *time);
 
 #endif /* INC_UTILS_H_ */

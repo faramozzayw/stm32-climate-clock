@@ -82,11 +82,11 @@ uint8_t ds18b20_read(ds18b20_t *ds18b20)
 
 float ds18b29_get_temp(ds18b20_t *ds18b20)
 {
-	uint8_t _presence = ds18b20_start(ds18b20);
+	ds18b20_start(ds18b20);
     ds18b20_write(ds18b20, 0xCC);  // skip ROM
     ds18b20_write(ds18b20, 0x44);  // convert t
 
-    _presence = ds18b20_start(ds18b20);
+    ds18b20_start(ds18b20);
     ds18b20_write(ds18b20, 0xCC);  // skip ROM
     ds18b20_write(ds18b20, 0xBE);  // Read Scratch-pad
 
