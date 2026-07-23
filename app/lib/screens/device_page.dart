@@ -5,13 +5,17 @@ import 'package:flutter/material.dart';
 
 import '../generated/device.pb.dart';
 import '../services/device_ble_service.dart';
+import '../services/temperature_notification_service.dart';
 import '../widgets/connection_card.dart';
+import '../widgets/current_temperature_card.dart';
 import '../widgets/page_header.dart';
 import '../widgets/temperature_command.dart';
 import '../widgets/time_sync_card.dart';
 
 class DevicePage extends StatefulWidget {
-  const DevicePage({super.key});
+  const DevicePage({required this.notifications, super.key});
+
+  final TemperatureNotificationService notifications;
 
   @override
   State<DevicePage> createState() => _DevicePageState();
@@ -23,8 +27,12 @@ class _DevicePageState extends State<DevicePage> {
   final _ble = DeviceBleService();
 
   StreamSubscription<bool>? _connectionSubscription;
+  StreamSubscription<DeviceTelemetry>? _telemetrySubscription;
   bool _busy = false;
   String _status = 'Disconnected';
+  int? _currentTemperature;
+  int? _deviceMinTemperature;
+  int? _deviceMaxTemperature;
 
   bool get _connected => _ble.isConnected;
 
@@ -33,14 +41,25 @@ class _DevicePageState extends State<DevicePage> {
     super.initState();
     _connectionSubscription = _ble.connectionChanges.listen((connected) {
       if (!connected && mounted) {
-        setState(() => _status = 'Disconnected');
+        setState(() {
+          _status = 'Disconnected';
+          _currentTemperature = null;
+          _deviceMinTemperature = null;
+          _deviceMaxTemperature = null;
+        });
+        widget.notifications.resetTemperatureState();
       }
     });
+    _telemetrySubscription = _ble.telemetry.listen(
+      _applyTelemetry,
+      onError: (Object error) => _showMessage(_friendlyError(error)),
+    );
   }
 
   @override
   void dispose() {
     _connectionSubscription?.cancel();
+    _telemetrySubscription?.cancel();
     unawaited(_ble.dispose());
     _maxController.dispose();
     _minController.dispose();
@@ -52,6 +71,7 @@ class _DevicePageState extends State<DevicePage> {
     setState(() => _busy = true);
 
     try {
+      await widget.notifications.requestPermission();
       await _ble.connect(
         onStatus: (status) {
           if (mounted) setState(() => _status = status);
@@ -113,6 +133,29 @@ class _DevicePageState extends State<DevicePage> {
     return tenths >= -32768 && tenths <= 32767 ? tenths : null;
   }
 
+  void _applyTelemetry(DeviceTelemetry telemetry) {
+    if (!mounted) return;
+
+    setState(() {
+      _currentTemperature = telemetry.currentTemp;
+      _deviceMinTemperature = telemetry.minTemp;
+      _deviceMaxTemperature = telemetry.maxTemp;
+    });
+
+    unawaited(
+      widget.notifications
+          .updateTemperature(
+            currentTemperature: telemetry.currentTemp,
+            minTemperature: telemetry.minTemp,
+            maxTemperature: telemetry.maxTemp,
+          )
+          .catchError(
+            (Object error) =>
+                debugPrint('Temperature notification failed: $error'),
+          ),
+    );
+  }
+
   String _friendlyError(Object error) {
     final message = error.toString().replaceFirst(
       RegExp(r'^\w+(?:Exception)?: '),
@@ -151,6 +194,8 @@ class _DevicePageState extends State<DevicePage> {
                 status: _status,
                 onPressed: _busy ? null : (_connected ? _disconnect : _connect),
               ),
+              const SizedBox(height: 14),
+              CurrentTemperatureCard(temperatureTenths: _currentTemperature),
               const SizedBox(height: 26),
               Text(
                 'Temperature range',
@@ -164,6 +209,7 @@ class _DevicePageState extends State<DevicePage> {
                 accent: const Color(0xFFFF756C),
                 surface: const Color(0xFFFFF0EE),
                 controller: _maxController,
+                currentLimitTenths: _deviceMaxTemperature,
                 onSend: _connected
                     ? () => _sendTemperature(maximum: true)
                     : null,
@@ -176,6 +222,7 @@ class _DevicePageState extends State<DevicePage> {
                 accent: const Color(0xFF5799E5),
                 surface: const Color(0xFFECF5FF),
                 controller: _minController,
+                currentLimitTenths: _deviceMinTemperature,
                 onSend: _connected
                     ? () => _sendTemperature(maximum: false)
                     : null,

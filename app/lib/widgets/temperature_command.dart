@@ -10,6 +10,7 @@ class TemperatureCommand extends StatelessWidget {
     required this.accent,
     required this.surface,
     required this.controller,
+    required this.currentLimitTenths,
     required this.onSend,
   });
 
@@ -19,6 +20,7 @@ class TemperatureCommand extends StatelessWidget {
   final Color accent;
   final Color surface;
   final TextEditingController controller;
+  final int? currentLimitTenths;
   final VoidCallback? onSend;
 
   @override
@@ -60,7 +62,21 @@ class TemperatureCommand extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              currentLimitTenths == null
+                  ? 'Current device limit: --.- °C'
+                  : 'Current device limit: '
+                        '${_formatTemperature(currentLimitTenths!)} °C',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -114,5 +130,11 @@ class TemperatureCommand extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatTemperature(int temperature) {
+    final magnitude = temperature.abs();
+    final sign = temperature < 0 ? '-' : '';
+    return '$sign${magnitude ~/ 10}.${magnitude % 10}';
   }
 }

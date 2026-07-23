@@ -11,14 +11,18 @@ class DeviceBleService {
 
   static final _serviceUuid = Guid('6E400001-B5A3-F393-E0A9-E50E24DCCA9E');
   static final _rxUuid = Guid('6E400002-B5A3-F393-E0A9-E50E24DCCA9E');
+  static final _txUuid = Guid('6E400003-B5A3-F393-E0A9-E50E24DCCA9E');
 
   final _connectionChanges = StreamController<bool>.broadcast();
+  final _telemetry = StreamController<DeviceTelemetry>.broadcast();
   BluetoothDevice? _device;
   BluetoothCharacteristic? _rxCharacteristic;
   StreamSubscription<BluetoothConnectionState>? _deviceStateSubscription;
+  StreamSubscription<List<int>>? _telemetrySubscription;
 
   bool get isConnected => _rxCharacteristic != null;
   Stream<bool> get connectionChanges => _connectionChanges.stream;
+  Stream<DeviceTelemetry> get telemetry => _telemetry.stream;
 
   Future<void> connect({void Function(String status)? onStatus}) async {
     await _requestPermissions();
@@ -57,6 +61,15 @@ class DeviceBleService {
       final characteristic = service.characteristics
           .where((item) => item.uuid == _rxUuid)
           .first;
+      final txCharacteristic = service.characteristics
+          .where((item) => item.uuid == _txUuid)
+          .first;
+
+      await _telemetrySubscription?.cancel();
+      _telemetrySubscription = txCharacteristic.onValueReceived.listen(
+        _decodeTelemetry,
+      );
+      await txCharacteristic.setNotifyValue(true);
 
       await _deviceStateSubscription?.cancel();
       _deviceStateSubscription = foundDevice.connectionState.listen((state) {
@@ -69,6 +82,8 @@ class DeviceBleService {
       _rxCharacteristic = characteristic;
       _connectionChanges.add(true);
     } catch (_) {
+      await _telemetrySubscription?.cancel();
+      _telemetrySubscription = null;
       if (foundDevice != null) await foundDevice.disconnect();
       rethrow;
     } finally {
@@ -97,9 +112,11 @@ class DeviceBleService {
   }
 
   Future<void> dispose() async {
+    await _telemetrySubscription?.cancel();
     await _deviceStateSubscription?.cancel();
     await _device?.disconnect();
     await _connectionChanges.close();
+    await _telemetry.close();
   }
 
   Future<void> _requestPermissions() async {
@@ -117,10 +134,25 @@ class DeviceBleService {
 
   void _clearConnection() {
     final wasConnected = isConnected;
+    unawaited(_telemetrySubscription?.cancel());
+    _telemetrySubscription = null;
     _device = null;
     _rxCharacteristic = null;
     if (wasConnected && !_connectionChanges.isClosed) {
       _connectionChanges.add(false);
+    }
+  }
+
+  void _decodeTelemetry(List<int> value) {
+    try {
+      final message = DeviceTelemetry.fromBuffer(value);
+      if (!_telemetry.isClosed) {
+        _telemetry.add(message);
+      }
+    } catch (error, stackTrace) {
+      if (!_telemetry.isClosed) {
+        _telemetry.addError(error, stackTrace);
+      }
     }
   }
 }

@@ -47,4 +47,18 @@ void main() {
       Int64(1700000000000),
     );
   });
+
+  test('serializes and parses device telemetry', () {
+    final telemetry = DeviceTelemetry(
+      currentTemp: -55,
+      minTemp: 100,
+      maxTemp: 300,
+    );
+
+    final decoded = DeviceTelemetry.fromBuffer(telemetry.writeToBuffer());
+
+    expect(decoded.currentTemp, -55);
+    expect(decoded.minTemp, 100);
+    expect(decoded.maxTemp, 300);
+  });
 }

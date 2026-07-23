@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'screens/device_page.dart';
+import 'services/temperature_notification_service.dart';
 
 class DeviceApp extends StatelessWidget {
-  const DeviceApp({super.key});
+  const DeviceApp({required this.notifications, super.key});
+
+  final TemperatureNotificationService notifications;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,7 @@ class DeviceApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const DevicePage(),
+      home: DevicePage(notifications: notifications),
     );
   }
 }
