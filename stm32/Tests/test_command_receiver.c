@@ -12,14 +12,14 @@
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 #define TEST_FRAME_MAX_SIZE (2U + 2U + UART_FRAME_MAX_PAYLOAD_SIZE + 2U)
 
-#define CHECK(condition) \
-	do \
-	{ \
-		if (!(condition)) \
-		{ \
+#define CHECK(condition)                                                       \
+	do                                                                         \
+	{                                                                          \
+		if (!(condition))                                                      \
+		{                                                                      \
 			printf("    CHECK failed at line %d: %s\n", __LINE__, #condition); \
-			return false; \
-		} \
+			return false;                                                      \
+		}                                                                      \
 	} while (0)
 
 static HAL_StatusTypeDef mock_receive_result = HAL_OK;
@@ -29,7 +29,7 @@ static uint8_t *mock_receive_data;
 static uint16_t mock_receive_size;
 
 HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart,
-		uint8_t *data, uint16_t size)
+	uint8_t *data, uint16_t size)
 {
 	mock_receive_call_count++;
 	mock_receive_huart = huart;
@@ -60,8 +60,8 @@ static uint16_t crc16_ccitt(const uint8_t *data, size_t length)
 		for (bit = 0U; bit < 8U; bit++)
 		{
 			crc = (crc & 0x8000U) != 0U
-					? (uint16_t)((crc << 1U) ^ 0x1021U)
-					: (uint16_t)(crc << 1U);
+					  ? (uint16_t)((crc << 1U) ^ 0x1021U)
+					  : (uint16_t)(crc << 1U);
 		}
 	}
 
@@ -69,7 +69,7 @@ static uint16_t crc16_ccitt(const uint8_t *data, size_t length)
 }
 
 static size_t make_frame(const uint8_t *payload, size_t payload_length,
-		uint8_t *frame)
+	uint8_t *frame)
 {
 	uint16_t crc;
 
@@ -85,10 +85,10 @@ static size_t make_frame(const uint8_t *payload, size_t payload_length,
 }
 
 static size_t encode_command(const device_DeviceCommand *command,
-		uint8_t *payload)
+	uint8_t *payload)
 {
 	pb_ostream_t stream = pb_ostream_from_buffer(payload,
-			UART_FRAME_MAX_PAYLOAD_SIZE);
+		UART_FRAME_MAX_PAYLOAD_SIZE);
 
 	if (!pb_encode(&stream, device_DeviceCommand_fields, command))
 	{
@@ -99,7 +99,7 @@ static size_t encode_command(const device_DeviceCommand *command,
 }
 
 static void receiver_feed(uart_command_receiver_t *receiver,
-		const uint8_t *bytes, size_t length)
+	const uint8_t *bytes, size_t length)
 {
 	size_t pos;
 
@@ -123,10 +123,10 @@ static bool test_frame_parser_accepts_valid_frame(void)
 	for (pos = 0U; pos + 1U < encoded_length; pos++)
 	{
 		CHECK(uart_frame_parser_process(&parser, encoded[pos], &view) ==
-				UART_FRAME_IN_PROGRESS);
+			  UART_FRAME_RESULT_IN_PROGRESS);
 	}
 	CHECK(uart_frame_parser_process(&parser, encoded[pos], &view) ==
-			UART_FRAME_COMPLETE);
+		  UART_FRAME_RESULT_COMPLETE);
 	CHECK(view.payload_length == sizeof(payload));
 	CHECK(memcmp(view.payload, payload, sizeof(payload)) == 0);
 	CHECK(parser.state == UART_FRAME_WAIT_MAGIC_1);
@@ -137,7 +137,7 @@ static bool test_frame_parser_resynchronizes_after_noise_and_repeated_magic(void
 {
 	const uint8_t payload[] = {0x01U};
 	const uint8_t prefix[] = {0x00U, UART_FRAME_MAGIC_1, 0x00U,
-			UART_FRAME_MAGIC_1};
+		UART_FRAME_MAGIC_1};
 	uint8_t encoded[TEST_FRAME_MAX_SIZE];
 	size_t encoded_length = make_frame(payload, sizeof(payload), encoded);
 	uart_frame_parser_t parser;
@@ -148,13 +148,14 @@ static bool test_frame_parser_resynchronizes_after_noise_and_repeated_magic(void
 	for (pos = 0U; pos < ARRAY_SIZE(prefix); pos++)
 	{
 		CHECK(uart_frame_parser_process(&parser, prefix[pos], &view) ==
-				UART_FRAME_IN_PROGRESS);
+			  UART_FRAME_RESULT_IN_PROGRESS);
 	}
 	/* The prefix ends in A5, so start at the second magic byte. */
 	for (pos = 1U; pos < encoded_length; pos++)
 	{
 		uart_frame_result_t expected = pos + 1U == encoded_length
-				? UART_FRAME_COMPLETE : UART_FRAME_IN_PROGRESS;
+										   ? UART_FRAME_RESULT_COMPLETE
+										   : UART_FRAME_RESULT_IN_PROGRESS;
 		CHECK(uart_frame_parser_process(&parser, encoded[pos], &view) == expected);
 	}
 	CHECK(view.payload_length == sizeof(payload));
@@ -165,9 +166,9 @@ static bool test_frame_parser_resynchronizes_after_noise_and_repeated_magic(void
 static bool test_frame_parser_rejects_bad_lengths_and_crc_then_recovers(void)
 {
 	const uint8_t zero_length_header[] = {UART_FRAME_MAGIC_1,
-			UART_FRAME_MAGIC_2, 0x00U, 0x00U};
+		UART_FRAME_MAGIC_2, 0x00U, 0x00U};
 	const uint8_t oversized_header[] = {UART_FRAME_MAGIC_1,
-			UART_FRAME_MAGIC_2, UART_FRAME_MAX_PAYLOAD_SIZE + 1U, 0x00U};
+		UART_FRAME_MAGIC_2, UART_FRAME_MAX_PAYLOAD_SIZE + 1U, 0x00U};
 	const uint8_t payload[] = {0x42U};
 	uint8_t encoded[TEST_FRAME_MAX_SIZE];
 	size_t encoded_length = make_frame(payload, sizeof(payload), encoded);
@@ -179,34 +180,38 @@ static bool test_frame_parser_rejects_bad_lengths_and_crc_then_recovers(void)
 	for (pos = 0U; pos < ARRAY_SIZE(zero_length_header); pos++)
 	{
 		uart_frame_result_t result = uart_frame_parser_process(&parser,
-				zero_length_header[pos], &view);
+			zero_length_header[pos], &view);
 		CHECK(result == (pos + 1U == ARRAY_SIZE(zero_length_header)
-				? UART_FRAME_ERROR : UART_FRAME_IN_PROGRESS));
+								? UART_FRAME_RESULT_ERROR
+								: UART_FRAME_RESULT_IN_PROGRESS));
 	}
 	for (pos = 0U; pos < ARRAY_SIZE(oversized_header); pos++)
 	{
 		uart_frame_result_t result = uart_frame_parser_process(&parser,
-				oversized_header[pos], &view);
+			oversized_header[pos], &view);
 		CHECK(result == (pos + 1U == ARRAY_SIZE(oversized_header)
-				? UART_FRAME_ERROR : UART_FRAME_IN_PROGRESS));
+								? UART_FRAME_RESULT_ERROR
+								: UART_FRAME_RESULT_IN_PROGRESS));
 	}
 
 	encoded[encoded_length - 1U] ^= 0x01U;
 	for (pos = 0U; pos < encoded_length; pos++)
 	{
 		uart_frame_result_t result = uart_frame_parser_process(&parser,
-				encoded[pos], &view);
+			encoded[pos], &view);
 		CHECK(result == (pos + 1U == encoded_length
-				? UART_FRAME_ERROR : UART_FRAME_IN_PROGRESS));
+								? UART_FRAME_RESULT_ERROR
+								: UART_FRAME_RESULT_IN_PROGRESS));
 	}
 
 	encoded_length = make_frame(payload, sizeof(payload), encoded);
 	for (pos = 0U; pos < encoded_length; pos++)
 	{
 		uart_frame_result_t result = uart_frame_parser_process(&parser,
-				encoded[pos], &view);
+			encoded[pos], &view);
 		CHECK(result == (pos + 1U == encoded_length
-				? UART_FRAME_COMPLETE : UART_FRAME_IN_PROGRESS));
+								? UART_FRAME_RESULT_COMPLETE
+								: UART_FRAME_RESULT_IN_PROGRESS));
 	}
 	return true;
 }
@@ -218,8 +223,10 @@ static bool test_frame_parser_rejects_null_arguments(void)
 
 	uart_frame_parser_init(NULL);
 	uart_frame_parser_init(&parser);
-	CHECK(uart_frame_parser_process(NULL, 0U, &view) == UART_FRAME_ERROR);
-	CHECK(uart_frame_parser_process(&parser, 0U, NULL) == UART_FRAME_ERROR);
+	CHECK(uart_frame_parser_process(NULL, 0U, &view) ==
+		  UART_FRAME_RESULT_ERROR);
+	CHECK(uart_frame_parser_process(&parser, 0U, NULL) ==
+		  UART_FRAME_RESULT_ERROR);
 	return true;
 }
 
@@ -235,7 +242,7 @@ static bool test_decoder_decodes_each_command(void)
 	payload_length = encode_command(&protobuf, payload);
 	CHECK(payload_length > 0U);
 	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-			DEVICE_COMMAND_DECODE_OK);
+		  DEVICE_COMMAND_DECODE_OK);
 	CHECK(decoded.type == DEVICE_COMMAND_SET_MAX_TEMP);
 	CHECK(decoded.value.temperature == 32767);
 
@@ -244,7 +251,7 @@ static bool test_decoder_decodes_each_command(void)
 	protobuf.command.set_min_temp.value = -32768;
 	payload_length = encode_command(&protobuf, payload);
 	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-			DEVICE_COMMAND_DECODE_OK);
+		  DEVICE_COMMAND_DECODE_OK);
 	CHECK(decoded.type == DEVICE_COMMAND_SET_MIN_TEMP);
 	CHECK(decoded.value.temperature == -32768);
 
@@ -253,7 +260,7 @@ static bool test_decoder_decodes_each_command(void)
 	protobuf.command.set_current_time.value_ms = UINT64_C(1721234567890);
 	payload_length = encode_command(&protobuf, payload);
 	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-			DEVICE_COMMAND_DECODE_OK);
+		  DEVICE_COMMAND_DECODE_OK);
 	CHECK(decoded.type == DEVICE_COMMAND_SET_CURRENT_TIME);
 	CHECK(decoded.value.current_time_ms == UINT64_C(1721234567890));
 	return true;
@@ -270,14 +277,14 @@ static bool test_decoder_rejects_out_of_range_temperatures(void)
 	protobuf.command.set_max_temp.value = 32768;
 	payload_length = encode_command(&protobuf, payload);
 	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-			DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE);
+		  DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE);
 
 	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_min_temp_tag;
 	protobuf.command.set_min_temp.value = -32769;
 	payload_length = encode_command(&protobuf, payload);
 	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-			DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE);
+		  DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE);
 	return true;
 }
 
@@ -288,15 +295,15 @@ static bool test_decoder_rejects_invalid_payloads(void)
 	decoded_device_command_t decoded;
 
 	CHECK(device_command_decode(NULL, 1U, &decoded) ==
-			DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
+		  DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
 	CHECK(device_command_decode(malformed, 0U, &decoded) ==
-			DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
+		  DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
 	CHECK(device_command_decode(malformed, sizeof(malformed), NULL) ==
-			DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
+		  DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
 	CHECK(device_command_decode(malformed, sizeof(malformed), &decoded) ==
-			DEVICE_COMMAND_DECODE_INVALID_PROTOBUF);
+		  DEVICE_COMMAND_DECODE_INVALID_PROTOBUF);
 	CHECK(device_command_decode(unknown_field_only, sizeof(unknown_field_only),
-			&decoded) == DEVICE_COMMAND_DECODE_MISSING_COMMAND);
+			  &decoded) == DEVICE_COMMAND_DECODE_MISSING_COMMAND);
 	return true;
 }
 

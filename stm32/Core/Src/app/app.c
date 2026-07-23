@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "screen.h"
+#include "telemetry.h"
 #include "temperature_indicator.h"
 #include "temperature_settings.h"
 #include "utils.h"
@@ -177,6 +178,7 @@ void app_update(app_t *app)
 	ds3231_force_temp_conv(app->rtc);
 	temperature = ds3231_get_temp_fixed(app->rtc);
 
+	telemetry_send_temperature(app->command_uart, temperature);
 	screen_update(app->lcd, &time, temperature, app->temperature_unit);
 	temperature_indicator_update(app->hw479, temperature, app->min_temp, app->max_temp);
 }

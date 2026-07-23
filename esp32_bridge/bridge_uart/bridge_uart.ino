@@ -3,16 +3,13 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
+#include "uart_framing.h"
+
 // UART to STM32
 HardwareSerial STM32Serial(2);
 
 #define TXD 17
 #define RXD 16
-
-#define UART_FRAME_MAGIC_1 0xA5
-#define UART_FRAME_MAGIC_2 0x5A
-#define UART_FRAME_MAX_PAYLOAD 32
-#define UART_FRAME_OVERHEAD 6
 
 // Nordic UART Service UUIDs
 #define SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -20,46 +17,29 @@ HardwareSerial STM32Serial(2);
 #define CHARACTERISTIC_TX_UUID "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 BLECharacteristic *txCharacteristic;
-
-static uint16_t crc16CcittUpdate(uint16_t crc, uint8_t byte)
-{
-	crc ^= static_cast<uint16_t>(byte) << 8;
-	for (uint8_t bit = 0; bit < 8; bit++)
-	{
-		crc = (crc & 0x8000U) != 0U
-				  ? static_cast<uint16_t>((crc << 1) ^ 0x1021U)
-				  : static_cast<uint16_t>(crc << 1);
-	}
-	return crc;
-}
+uart_frame_parser_t stm32FrameParser;
 
 static bool writeUartFrame(const uint8_t *payload, size_t length)
 {
-	if (payload == nullptr || length == 0 || length > UART_FRAME_MAX_PAYLOAD)
+	uint8_t frame[UART_FRAME_MAX_SIZE];
+	uint16_t frameLength;
+
+	if (length > UART_FRAME_MAX_PAYLOAD_SIZE)
 	{
 		return false;
 	}
 
-	uint8_t frame[UART_FRAME_MAX_PAYLOAD + UART_FRAME_OVERHEAD];
-	uint16_t crc = 0xFFFFU;
-
-	frame[0] = UART_FRAME_MAGIC_1;
-	frame[1] = UART_FRAME_MAGIC_2;
-	frame[2] = static_cast<uint8_t>(length & 0xFFU);
-	frame[3] = static_cast<uint8_t>((length >> 8) & 0xFFU);
-	crc = crc16CcittUpdate(crc, frame[2]);
-	crc = crc16CcittUpdate(crc, frame[3]);
-
-	for (size_t i = 0; i < length; i++)
+	if (!uart_frame_encode(
+			payload,
+			static_cast<uint16_t>(length),
+			frame,
+			sizeof(frame),
+			&frameLength))
 	{
-		frame[4 + i] = payload[i];
-		crc = crc16CcittUpdate(crc, payload[i]);
+		return false;
 	}
 
-	frame[4 + length] = static_cast<uint8_t>(crc & 0xFFU);
-	frame[5 + length] = static_cast<uint8_t>((crc >> 8) & 0xFFU);
-	return STM32Serial.write(frame, length + UART_FRAME_OVERHEAD) ==
-		   length + UART_FRAME_OVERHEAD;
+	return STM32Serial.write(frame, frameLength) == frameLength;
 }
 
 class RxCallbacks : public BLECharacteristicCallbacks
@@ -97,6 +77,7 @@ void setup()
 
 	// UART to STM32
 	STM32Serial.begin(115200, SERIAL_8N1, RXD, TXD);
+	uart_frame_parser_init(&stm32FrameParser);
 
 	// Initialize BLE
 	BLEDevice::init("ClimateClock");
@@ -132,18 +113,23 @@ void setup()
 void loop()
 {
 	// STM32 -> ESP32 -> phone
-	if (STM32Serial.available())
+	while (STM32Serial.available())
 	{
-		uint8_t buffer[128];
-		size_t length = 0;
+		uart_frame_view_t frame;
+		uart_frame_result_t result = uart_frame_parser_process(
+			&stm32FrameParser,
+			static_cast<uint8_t>(STM32Serial.read()),
+			&frame);
 
-		while (STM32Serial.available() && length < sizeof(buffer))
+		if (result == UART_FRAME_RESULT_COMPLETE)
 		{
-			buffer[length++] = STM32Serial.read();
+			txCharacteristic->setValue(frame.payload, frame.payload_length);
+			txCharacteristic->notify();
 		}
-
-		txCharacteristic->setValue(buffer, length);
-		txCharacteristic->notify();
+		else if (result == UART_FRAME_RESULT_ERROR)
+		{
+			Serial.println("Invalid UART frame received from STM32");
+		}
 	}
 
 	delay(1);

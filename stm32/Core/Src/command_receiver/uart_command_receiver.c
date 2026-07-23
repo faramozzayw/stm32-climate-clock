@@ -149,11 +149,11 @@ static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte)
 	uart_frame_result_t frame_result = uart_frame_parser_process(
 		&commands->frame_parser, byte, &frame);
 
-	if (frame_result == UART_FRAME_ERROR)
+	if (frame_result == UART_FRAME_RESULT_ERROR)
 	{
 		commands->stats.frame_error_count++;
 	}
-	else if (frame_result == UART_FRAME_COMPLETE)
+	else if (frame_result == UART_FRAME_RESULT_COMPLETE)
 	{
 		decoded_device_command_t decoded_command;
 
