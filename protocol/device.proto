@@ -26,6 +26,14 @@ message SetMinTemp {
   sint32 value = 1;
 }
 
+message SetMaxHumidity {
+  sint32 value = 1;
+}
+
+message SetMinHumidity {
+  sint32 value = 1;
+}
+
 message SetCurrentTime {
   // Current time in milliseconds.
   uint64 value_ms = 1;
@@ -34,4 +42,5 @@ message SetCurrentTime {
 message DeviceTelemetry {
   // Temperature in tenths of a degree Celsius.
   sint32 current_temp = 1;
+  // sint32 humidity = 2;
 }

@@ -15,7 +15,16 @@ PB_BIND(device_SetMaxTemp, device_SetMaxTemp, AUTO)
 PB_BIND(device_SetMinTemp, device_SetMinTemp, AUTO)
 
 
+PB_BIND(device_SetMaxHumidity, device_SetMaxHumidity, AUTO)
+
+
+PB_BIND(device_SetMinHumidity, device_SetMinHumidity, AUTO)
+
+
 PB_BIND(device_SetCurrentTime, device_SetCurrentTime, AUTO)
+
+
+PB_BIND(device_DeviceTelemetry, device_DeviceTelemetry, AUTO)
 
 
 

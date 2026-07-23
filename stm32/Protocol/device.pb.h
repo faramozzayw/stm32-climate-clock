@@ -24,6 +24,14 @@ typedef struct _device_SetMinTemp {
     int32_t value;
 } device_SetMinTemp;
 
+typedef struct _device_SetMaxHumidity {
+    int32_t value;
+} device_SetMaxHumidity;
+
+typedef struct _device_SetMinHumidity {
+    int32_t value;
+} device_SetMinHumidity;
+
 typedef struct _device_SetCurrentTime {
     /* Current time in milliseconds. */
     uint64_t value_ms;
@@ -40,6 +48,11 @@ typedef struct _device_DeviceCommand {
     } command;
 } device_DeviceCommand;
 
+typedef struct _device_DeviceTelemetry {
+    /* Temperature in tenths of a degree Celsius. */
+    int32_t current_temp; /* sint32 humidity = 2; */
+} device_DeviceTelemetry;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,19 +62,28 @@ extern "C" {
 #define device_DeviceCommand_init_default        {0, {device_SetMaxTemp_init_default}}
 #define device_SetMaxTemp_init_default           {0}
 #define device_SetMinTemp_init_default           {0}
+#define device_SetMaxHumidity_init_default       {0}
+#define device_SetMinHumidity_init_default       {0}
 #define device_SetCurrentTime_init_default       {0}
+#define device_DeviceTelemetry_init_default      {0}
 #define device_DeviceCommand_init_zero           {0, {device_SetMaxTemp_init_zero}}
 #define device_SetMaxTemp_init_zero              {0}
 #define device_SetMinTemp_init_zero              {0}
+#define device_SetMaxHumidity_init_zero          {0}
+#define device_SetMinHumidity_init_zero          {0}
 #define device_SetCurrentTime_init_zero          {0}
+#define device_DeviceTelemetry_init_zero         {0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define device_SetMaxTemp_value_tag              1
 #define device_SetMinTemp_value_tag              1
+#define device_SetMaxHumidity_value_tag          1
+#define device_SetMinHumidity_value_tag          1
 #define device_SetCurrentTime_value_ms_tag       1
 #define device_DeviceCommand_set_max_temp_tag    1
 #define device_DeviceCommand_set_min_temp_tag    2
 #define device_DeviceCommand_set_current_time_tag 3
+#define device_DeviceTelemetry_current_temp_tag  1
 
 /* Struct field encoding specification for nanopb */
 #define device_DeviceCommand_FIELDLIST(X, a) \
@@ -84,27 +106,51 @@ X(a, STATIC,   SINGULAR, SINT32,   value,             1)
 #define device_SetMinTemp_CALLBACK NULL
 #define device_SetMinTemp_DEFAULT NULL
 
+#define device_SetMaxHumidity_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   value,             1)
+#define device_SetMaxHumidity_CALLBACK NULL
+#define device_SetMaxHumidity_DEFAULT NULL
+
+#define device_SetMinHumidity_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   value,             1)
+#define device_SetMinHumidity_CALLBACK NULL
+#define device_SetMinHumidity_DEFAULT NULL
+
 #define device_SetCurrentTime_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT64,   value_ms,          1)
 #define device_SetCurrentTime_CALLBACK NULL
 #define device_SetCurrentTime_DEFAULT NULL
 
+#define device_DeviceTelemetry_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   current_temp,      1)
+#define device_DeviceTelemetry_CALLBACK NULL
+#define device_DeviceTelemetry_DEFAULT NULL
+
 extern const pb_msgdesc_t device_DeviceCommand_msg;
 extern const pb_msgdesc_t device_SetMaxTemp_msg;
 extern const pb_msgdesc_t device_SetMinTemp_msg;
+extern const pb_msgdesc_t device_SetMaxHumidity_msg;
+extern const pb_msgdesc_t device_SetMinHumidity_msg;
 extern const pb_msgdesc_t device_SetCurrentTime_msg;
+extern const pb_msgdesc_t device_DeviceTelemetry_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define device_DeviceCommand_fields &device_DeviceCommand_msg
 #define device_SetMaxTemp_fields &device_SetMaxTemp_msg
 #define device_SetMinTemp_fields &device_SetMinTemp_msg
+#define device_SetMaxHumidity_fields &device_SetMaxHumidity_msg
+#define device_SetMinHumidity_fields &device_SetMinHumidity_msg
 #define device_SetCurrentTime_fields &device_SetCurrentTime_msg
+#define device_DeviceTelemetry_fields &device_DeviceTelemetry_msg
 
 /* Maximum encoded size of messages (where known) */
 #define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceCommand_size
 #define device_DeviceCommand_size                13
+#define device_DeviceTelemetry_size              6
 #define device_SetCurrentTime_size               11
+#define device_SetMaxHumidity_size               6
 #define device_SetMaxTemp_size                   6
+#define device_SetMinHumidity_size               6
 #define device_SetMinTemp_size                   6
 
 #ifdef __cplusplus

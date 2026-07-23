@@ -14,9 +14,7 @@ import tempfile
 PROTOCOL_DIR = Path(__file__).resolve().parent
 REPOSITORY_ROOT = PROTOCOL_DIR.parent
 PROTO_FILE = PROTOCOL_DIR / "device.proto"
-NANOPB_ROOT = (
-    REPOSITORY_ROOT / "stm32" / "Middlewares" / "Third_Party" / "nanopb"
-)
+NANOPB_ROOT = REPOSITORY_ROOT / "third_party" / "nanopb"
 NANOPB_GENERATOR = NANOPB_ROOT / "generator" / "nanopb_generator.py"
 OUTPUT_DIR = REPOSITORY_ROOT / "stm32" / "Protocol"
 GENERATED_FILES = ("device.pb.c", "device.pb.h")
@@ -26,7 +24,7 @@ def verify_prerequisites() -> None:
     if not NANOPB_GENERATOR.is_file():
         raise RuntimeError(
             "nanopb submodule is not initialized; run "
-            "'git submodule update --init stm32/Middlewares/Third_Party/nanopb'"
+            "'git submodule update --init third_party/nanopb'"
         )
 
     if not PROTO_FILE.is_file():
