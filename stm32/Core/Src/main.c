@@ -128,14 +128,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   if (!application_init(
-      &application,
-      &lcd,
-      &hw479,
-      &ds3231,
-      &eeprom,
-      &hi2c1,
-      &command_receiver,
-      &huart1))
+          &application,
+          &lcd,
+          &hw479,
+          &ds3231,
+          &eeprom,
+          &hi2c1,
+          &command_receiver,
+          &huart1))
   {
     Error_Handler();
   }

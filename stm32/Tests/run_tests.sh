@@ -23,15 +23,15 @@ mkdir -p "${build_dir}"
     -Ifakes \
     -I../Core/Inc \
     -I../Protocol \
-    -I../Middlewares/Third_Party/nanopb \
+    -I../../third_party/nanopb \
     test_command_receiver.c \
     ../Core/Src/command_receiver/uart_frame.c \
     ../Core/Src/command_receiver/device_command_decoder.c \
     ../Core/Src/command_receiver/uart_command_receiver.c \
     ../Protocol/device.pb.c \
-    ../Middlewares/Third_Party/nanopb/pb_common.c \
-    ../Middlewares/Third_Party/nanopb/pb_decode.c \
-    ../Middlewares/Third_Party/nanopb/pb_encode.c \
+    ../../third_party/nanopb/pb_common.c \
+    ../../third_party/nanopb/pb_decode.c \
+    ../../third_party/nanopb/pb_encode.c \
     -o "${test_executable}"
 
 "${test_executable}"
