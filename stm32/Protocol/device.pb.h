@@ -50,7 +50,11 @@ typedef struct _device_DeviceCommand {
 
 typedef struct _device_DeviceTelemetry {
     /* Temperature in tenths of a degree Celsius. */
-    int32_t current_temp; /* sint32 humidity = 2; */
+    int32_t current_temp;
+    /* Configured minimum temperature in tenths of a degree Celsius. */
+    int32_t min_temp;
+    /* Configured maximum temperature in tenths of a degree Celsius. */
+    int32_t max_temp;
 } device_DeviceTelemetry;
 
 
@@ -65,14 +69,14 @@ extern "C" {
 #define device_SetMaxHumidity_init_default       {0}
 #define device_SetMinHumidity_init_default       {0}
 #define device_SetCurrentTime_init_default       {0}
-#define device_DeviceTelemetry_init_default      {0}
+#define device_DeviceTelemetry_init_default      {0, 0, 0}
 #define device_DeviceCommand_init_zero           {0, {device_SetMaxTemp_init_zero}}
 #define device_SetMaxTemp_init_zero              {0}
 #define device_SetMinTemp_init_zero              {0}
 #define device_SetMaxHumidity_init_zero          {0}
 #define device_SetMinHumidity_init_zero          {0}
 #define device_SetCurrentTime_init_zero          {0}
-#define device_DeviceTelemetry_init_zero         {0}
+#define device_DeviceTelemetry_init_zero         {0, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define device_SetMaxTemp_value_tag              1
@@ -84,6 +88,8 @@ extern "C" {
 #define device_DeviceCommand_set_min_temp_tag    2
 #define device_DeviceCommand_set_current_time_tag 3
 #define device_DeviceTelemetry_current_temp_tag  1
+#define device_DeviceTelemetry_min_temp_tag      2
+#define device_DeviceTelemetry_max_temp_tag      3
 
 /* Struct field encoding specification for nanopb */
 #define device_DeviceCommand_FIELDLIST(X, a) \
@@ -122,7 +128,9 @@ X(a, STATIC,   SINGULAR, UINT64,   value_ms,          1)
 #define device_SetCurrentTime_DEFAULT NULL
 
 #define device_DeviceTelemetry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SINT32,   current_temp,      1)
+X(a, STATIC,   SINGULAR, SINT32,   current_temp,      1) \
+X(a, STATIC,   SINGULAR, SINT32,   min_temp,          2) \
+X(a, STATIC,   SINGULAR, SINT32,   max_temp,          3)
 #define device_DeviceTelemetry_CALLBACK NULL
 #define device_DeviceTelemetry_DEFAULT NULL
 
@@ -144,9 +152,9 @@ extern const pb_msgdesc_t device_DeviceTelemetry_msg;
 #define device_DeviceTelemetry_fields &device_DeviceTelemetry_msg
 
 /* Maximum encoded size of messages (where known) */
-#define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceCommand_size
+#define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceTelemetry_size
 #define device_DeviceCommand_size                13
-#define device_DeviceTelemetry_size              6
+#define device_DeviceTelemetry_size              18
 #define device_SetCurrentTime_size               11
 #define device_SetMaxHumidity_size               6
 #define device_SetMaxTemp_size                   6

@@ -8,7 +8,9 @@
 
 bool telemetry_send_temperature(
 	UART_HandleTypeDef *uart,
-	int16_t temperature_celsius)
+	int16_t current_temperature,
+	int16_t min_temperature,
+	int16_t max_temperature)
 {
 	if (uart == NULL)
 	{
@@ -21,7 +23,9 @@ bool telemetry_send_temperature(
 	pb_ostream_t stream;
 	uint16_t frame_length;
 
-	telemetry.current_temp = temperature_celsius;
+	telemetry.current_temp = current_temperature;
+	telemetry.min_temp = min_temperature;
+	telemetry.max_temp = max_temperature;
 	stream = pb_ostream_from_buffer(payload, sizeof(payload));
 
 	if (!pb_encode(&stream, device_DeviceTelemetry_fields, &telemetry))

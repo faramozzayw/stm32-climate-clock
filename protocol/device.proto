@@ -42,5 +42,8 @@ message SetCurrentTime {
 message DeviceTelemetry {
   // Temperature in tenths of a degree Celsius.
   sint32 current_temp = 1;
-  // sint32 humidity = 2;
+  // Configured minimum temperature in tenths of a degree Celsius.
+  sint32 min_temp = 2;
+  // Configured maximum temperature in tenths of a degree Celsius.
+  sint32 max_temp = 3;
 }
