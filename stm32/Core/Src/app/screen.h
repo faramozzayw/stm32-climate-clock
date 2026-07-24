@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#include "drivers/ds3231.h"
+#include "calendar_time.h"
 #include "drivers/lcd1602.h"
-#include "utils.h"
+#include "temperature.h"
 
 /**
  * @brief Initialize the LCD and show the startup message.
@@ -22,6 +22,10 @@ void screen_init(lcd1602_t *lcd);
  * @param temperature_celsius Temperature in tenths of a degree Celsius.
  * @param unit Unit in which the temperature should be displayed.
  */
-void screen_update(lcd1602_t *lcd, const ds3231_time_t *time, int16_t temperature_celsius, temperature_unit_t unit);
+void screen_update(
+	lcd1602_t *lcd,
+	const calendar_time_t *time,
+	int16_t temperature_celsius,
+	temperature_unit_t unit);
 
 #endif /* SRC_APP_SCREEN_H_ */

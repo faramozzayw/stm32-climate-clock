@@ -6,7 +6,7 @@
  */
 
 #include "drivers/ds18b20.h"
-#include "utils.h"
+#include "platform/hal_gpio_timer.h"
 
 void ds18b20_init(ds18b20_t *ds18b20)
 {

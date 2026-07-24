@@ -53,25 +53,29 @@
 /* USER CODE BEGIN PV */
 static app_t app;
 static uart_command_receiver_t command_receiver;
+static hal_uart_transport_t telemetry_transport = {
+	.uart = &huart1,
+	.timeout_ms = 100U,
+};
 
 static lcd1602_t lcd = {
-    .i2c = &hi2c1,
-    .addr = 0x27 << 1,
+	.i2c = &hi2c1,
+	.addr = 0x27 << 1,
 };
 
 static hw479_t hw479 = {
-    .htim = &htim2,
-    .red_ch = TIM_CHANNEL_1,
-    .green_ch = TIM_CHANNEL_2,
-    .blue_ch = TIM_CHANNEL_3,
+	.htim = &htim2,
+	.red_ch = TIM_CHANNEL_1,
+	.green_ch = TIM_CHANNEL_2,
+	.blue_ch = TIM_CHANNEL_3,
 };
 
 static at24c256_t eeprom;
 
 static ds3231_t ds3231 =
-    {
-        .i2c = &hi2c1,
-        .addr = 0xd0,
+	{
+		.i2c = &hi2c1,
+		.addr = 0xd0,
 };
 
 // static ds18b20_t ds18b20 =
@@ -127,45 +131,46 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  if (!app_init(
-          &app,
-          &lcd,
-          &hw479,
-          &ds3231,
-          &eeprom,
-          &hi2c1,
-          &command_receiver,
-          &huart1))
-  {
-    Error_Handler();
-  }
-  //  ds18b20_init(&ds18b20);
+	if (!app_init(
+			&app,
+			&lcd,
+			&hw479,
+			&ds3231,
+			&eeprom,
+			&hi2c1,
+			&command_receiver,
+			&huart1,
+			&telemetry_transport))
+	{
+		Error_Handler();
+	}
+	//  ds18b20_init(&ds18b20);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  HAL_Delay(1000);
+	HAL_Delay(1000);
 
-  printf("-------------------------\r\n");
+	printf("-------------------------\r\n");
 
-  uint32_t last_update = HAL_GetTick();
+	uint32_t last_update = HAL_GetTick();
 
-  while (1)
-  {
-    app_poll(&app);
+	while (1)
+	{
+		app_poll(&app);
 
-    if ((HAL_GetTick() - last_update) >= APP_UPDATE_INTERVAL_MS)
-    {
-      last_update += APP_UPDATE_INTERVAL_MS;
-      app_update(&app);
-    }
+		if ((HAL_GetTick() - last_update) >= APP_UPDATE_INTERVAL_MS)
+		{
+			last_update += APP_UPDATE_INTERVAL_MS;
+			app_update(&app);
+		}
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+	}
   /* USER CODE END 3 */
 }
 
@@ -225,7 +230,7 @@ void SystemClock_Config(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  app_on_uart_rx_complete(&app, huart);
+	app_on_uart_rx_complete(&app, huart);
 }
 /* USER CODE END 4 */
 
@@ -236,11 +241,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1)
+	{
+	}
   /* USER CODE END Error_Handler_Debug */
 }
 #ifdef USE_FULL_ASSERT
@@ -254,8 +259,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	/* User can add his own implementation to report the file name and line number,
+	 ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

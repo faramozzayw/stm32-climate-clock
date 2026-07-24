@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include "calendar_time.h"
 #include "i2c.h"
 
 typedef struct
@@ -19,19 +20,8 @@ typedef struct
 	uint8_t addr;
 } ds3231_t;
 
-typedef struct
-{
-	uint8_t seconds;
-	uint8_t minutes;
-	uint8_t hour;
-	uint8_t dayofweek;
-	uint8_t dayofmonth;
-	uint8_t month;
-	uint8_t year;
-} ds3231_time_t;
-
-void ds3231_set_time(ds3231_t *ds3231, ds3231_time_t time);
-ds3231_time_t ds3231_get_time(ds3231_t *ds3231);
+void ds3231_set_time(ds3231_t *ds3231, calendar_time_t time);
+calendar_time_t ds3231_get_time(ds3231_t *ds3231);
 /**
  * @brief Read temperature in tenths of a degree Celsius.
  *

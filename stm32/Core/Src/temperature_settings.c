@@ -1,6 +1,6 @@
 #include "temperature_settings.h"
 
-#include "utils.h"
+#include "byte_codec.h"
 
 /* Each temperature occupies one little-endian int16_t EEPROM slot. */
 #define MIN_TEMP_ADDRESS 0U

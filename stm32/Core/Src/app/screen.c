@@ -1,6 +1,6 @@
 #include "screen.h"
 
-#define TIME_FORMAT "%02d:%02d %02d/%02d/20%02d"
+#define TIME_FORMAT "%02d:%02d %02d/%02d/%04d"
 
 void screen_init(lcd1602_t *lcd)
 {
@@ -14,7 +14,11 @@ void screen_init(lcd1602_t *lcd)
 	lcd_1602_print(lcd, "Initializing");
 }
 
-void screen_update(lcd1602_t *lcd, const ds3231_time_t *time, int16_t temperature_celsius, temperature_unit_t unit)
+void screen_update(
+	lcd1602_t *lcd,
+	const calendar_time_t *time,
+	int16_t temperature_celsius,
+	temperature_unit_t unit)
 {
 	char temperature_text[16];
 	int16_t display_temperature = temperature_celsius;
@@ -37,8 +41,8 @@ void screen_update(lcd1602_t *lcd, const ds3231_time_t *time, int16_t temperatur
 	lcd_1602_printf(lcd,
 		TIME_FORMAT,
 		time->hour,
-		time->minutes,
-		time->dayofmonth,
+		time->minute,
+		time->day,
 		time->month,
 		time->year);
 

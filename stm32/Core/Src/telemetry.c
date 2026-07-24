@@ -1,27 +1,26 @@
 #include "telemetry.h"
 
-#include "command_receiver/uart_frame.h"
+#include <stddef.h>
+
 #include "device.pb.h"
 #include "pb_encode.h"
 
-#define TELEMETRY_UART_TIMEOUT_MS 100U
-
-bool telemetry_send_temperature(
-	UART_HandleTypeDef *uart,
+bool telemetry_encode_temperature(
 	int16_t current_temperature,
 	int16_t min_temperature,
-	int16_t max_temperature)
+	int16_t max_temperature,
+	uint8_t *frame,
+	uint16_t frame_capacity,
+	uint16_t *frame_length)
 {
-	if (uart == NULL)
+	device_DeviceMessage message = device_DeviceMessage_init_zero;
+	uint8_t payload[device_DeviceMessage_size];
+	pb_ostream_t stream;
+
+	if ((frame == NULL) || (frame_length == NULL))
 	{
 		return false;
 	}
-
-	device_DeviceMessage message = device_DeviceMessage_init_zero;
-	uint8_t payload[device_DeviceMessage_size];
-	uint8_t frame[UART_FRAME_MAX_SIZE];
-	pb_ostream_t stream;
-	uint16_t frame_length;
 
 	message.which_payload = device_DeviceMessage_telemetry_tag;
 	message.payload.telemetry.current_temp = current_temperature;
@@ -34,19 +33,10 @@ bool telemetry_send_temperature(
 		return false;
 	}
 
-	if (!uart_frame_encode(
-			payload,
-			(uint16_t)stream.bytes_written,
-			frame,
-			sizeof(frame),
-			&frame_length))
-	{
-		return false;
-	}
-
-	return HAL_UART_Transmit(
-			   uart,
-			   frame,
-			   frame_length,
-			   TELEMETRY_UART_TIMEOUT_MS) == HAL_OK;
+	return uart_frame_encode(
+		payload,
+		(uint16_t)stream.bytes_written,
+		frame,
+		frame_capacity,
+		frame_length);
 }

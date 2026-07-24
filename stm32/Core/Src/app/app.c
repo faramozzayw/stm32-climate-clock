@@ -6,7 +6,7 @@
 #include "telemetry.h"
 #include "temperature_indicator.h"
 #include "temperature_settings.h"
-#include "utils.h"
+#include "calendar_time.h"
 
 #define DEFAULT_MIN_TEMP 100
 #define DEFAULT_MAX_TEMP 300
@@ -108,16 +108,16 @@ static void apply_received_messages(app_t *app)
 
 	if (values->current_time_updated)
 	{
-		ds3231_time_t time;
+		calendar_time_t time;
 
-		if (epoch_ms_to_ds3231_time(values->current_time_ms, &time))
+		if (calendar_time_from_unix_ms(values->current_time_ms, &time))
 		{
 			ds3231_set_time(app->rtc, time);
-			printf("RTC set to %02u:%02u:%02u %02u/%02u/20%02u UTC\r\n",
+			printf("RTC set to %02u:%02u:%02u %02u/%02u/%04u UTC\r\n",
 				(unsigned int)time.hour,
-				(unsigned int)time.minutes,
-				(unsigned int)time.seconds,
-				(unsigned int)time.dayofmonth,
+				(unsigned int)time.minute,
+				(unsigned int)time.second,
+				(unsigned int)time.day,
 				(unsigned int)time.month,
 				(unsigned int)time.year);
 		}
@@ -153,7 +153,8 @@ bool app_init(
 	at24c256_t *eeprom,
 	I2C_HandleTypeDef *eeprom_i2c,
 	uart_command_receiver_t *command_receiver,
-	UART_HandleTypeDef *command_uart)
+	UART_HandleTypeDef *command_uart,
+	hal_uart_transport_t *telemetry_transport)
 {
 	AT24C256_Status eeprom_status;
 
@@ -163,6 +164,7 @@ bool app_init(
 	app->eeprom = eeprom;
 	app->command_receiver = command_receiver;
 	app->command_uart = command_uart;
+	app->telemetry_transport = telemetry_transport;
 	app->min_temp = DEFAULT_MIN_TEMP;
 	app->max_temp = DEFAULT_MAX_TEMP;
 	app->temperature_unit = TEMPERATURE_UNIT_CELSIUS;
@@ -243,8 +245,10 @@ void app_poll(app_t *app)
 
 void app_update(app_t *app)
 {
-	ds3231_time_t time;
+	calendar_time_t time;
 	int16_t temperature;
+	uint8_t telemetry_frame[TELEMETRY_FRAME_MAX_SIZE];
+	uint16_t telemetry_frame_length;
 
 	if ((app == NULL) || (app->lcd == NULL) ||
 		(app->hw479 == NULL) || (app->rtc == NULL))
@@ -256,11 +260,19 @@ void app_update(app_t *app)
 	ds3231_force_temp_conv(app->rtc);
 	temperature = ds3231_get_temp_fixed(app->rtc);
 
-	telemetry_send_temperature(
-		app->command_uart,
-		temperature,
-		app->min_temp,
-		app->max_temp);
+	if (telemetry_encode_temperature(
+			temperature,
+			app->min_temp,
+			app->max_temp,
+			telemetry_frame,
+			sizeof(telemetry_frame),
+			&telemetry_frame_length))
+	{
+		hal_uart_transport_send(
+			app->telemetry_transport,
+			telemetry_frame,
+			telemetry_frame_length);
+	}
 	screen_update(app->lcd, &time, temperature, app->temperature_unit);
 	temperature_indicator_update(app->hw479, temperature, app->min_temp, app->max_temp);
 }

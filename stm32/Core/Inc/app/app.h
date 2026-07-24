@@ -9,7 +9,8 @@
 #include "drivers/ds3231.h"
 #include "drivers/hw479.h"
 #include "drivers/lcd1602.h"
-#include "utils.h"
+#include "platform/hal_uart_transport.h"
+#include "temperature.h"
 
 #define APP_UPDATE_INTERVAL_MS 750U
 
@@ -21,6 +22,7 @@ typedef struct
 	at24c256_t *eeprom;
 	uart_command_receiver_t *command_receiver;
 	UART_HandleTypeDef *command_uart;
+	hal_uart_transport_t *telemetry_transport;
 	int16_t min_temp;
 	int16_t max_temp;
 	temperature_unit_t temperature_unit;
@@ -39,6 +41,7 @@ typedef struct
  * @param eeprom_i2c I2C peripheral used by the EEPROM.
  * @param command_receiver UART command receiver state.
  * @param command_uart UART peripheral used to receive commands.
+ * @param telemetry_transport UART transport used to send telemetry.
  * @return true when required application components initialized successfully.
  *         EEPROM availability is optional and is tracked in the application.
  */
@@ -49,7 +52,8 @@ bool app_init(app_t *app,
 	at24c256_t *eeprom,
 	I2C_HandleTypeDef *eeprom_i2c,
 	uart_command_receiver_t *command_receiver,
-	UART_HandleTypeDef *command_uart);
+	UART_HandleTypeDef *command_uart,
+	hal_uart_transport_t *telemetry_transport);
 
 /**
  * @brief Process received commands and apply their requested changes.
