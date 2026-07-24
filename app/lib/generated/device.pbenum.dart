@@ -14,6 +14,25 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+class TemperatureUnit extends $pb.ProtobufEnum {
+  static const TemperatureUnit TEMPERATURE_UNIT_CELSIUS =
+      TemperatureUnit._(0, _omitEnumNames ? '' : 'TEMPERATURE_UNIT_CELSIUS');
+  static const TemperatureUnit TEMPERATURE_UNIT_FAHRENHEIT =
+      TemperatureUnit._(1, _omitEnumNames ? '' : 'TEMPERATURE_UNIT_FAHRENHEIT');
+
+  static const $core.List<TemperatureUnit> values = <TemperatureUnit>[
+    TEMPERATURE_UNIT_CELSIUS,
+    TEMPERATURE_UNIT_FAHRENHEIT,
+  ];
+
+  static final $core.List<TemperatureUnit?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 1);
+  static TemperatureUnit? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const TemperatureUnit._(super.value, super.name);
+}
+
 class BleConnectionState extends $pb.ProtobufEnum {
   static const BleConnectionState BLE_CONNECTION_STATE_DISCONNECTED =
       BleConnectionState._(

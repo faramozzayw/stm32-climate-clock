@@ -27,10 +27,15 @@ PB_BIND(device_SetMinHumidity, device_SetMinHumidity, AUTO)
 PB_BIND(device_SetCurrentTime, device_SetCurrentTime, AUTO)
 
 
+PB_BIND(device_SetTemperatureUnit, device_SetTemperatureUnit, AUTO)
+
+
 PB_BIND(device_DeviceTelemetry, device_DeviceTelemetry, AUTO)
 
 
 PB_BIND(device_BridgeStatus, device_BridgeStatus, AUTO)
+
+
 
 
 

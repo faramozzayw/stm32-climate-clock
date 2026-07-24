@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../utils/temperature.dart';
+
 class CurrentTemperatureCard extends StatelessWidget {
-  const CurrentTemperatureCard({required this.temperatureTenths, super.key});
+  const CurrentTemperatureCard({
+    required this.temperatureTenths,
+    required this.fahrenheit,
+    super.key,
+  });
 
   final int? temperatureTenths;
+  final bool fahrenheit;
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +69,11 @@ class CurrentTemperatureCard extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             temperature == null
-                ? '--.- °C'
-                : '${_formatTemperature(temperature)} °C',
+                ? '--.- °${fahrenheit ? 'F' : 'C'}'
+                : formatTemperatureWithUnit(
+                    temperature,
+                    fahrenheit: fahrenheit,
+                  ),
             style: const TextStyle(
               color: Color(0xFF29263A),
               fontSize: 25,
@@ -76,9 +86,4 @@ class CurrentTemperatureCard extends StatelessWidget {
     );
   }
 
-  String _formatTemperature(int temperature) {
-    final magnitude = temperature.abs();
-    final sign = temperature < 0 ? '-' : '';
-    return '$sign${magnitude ~/ 10}.${magnitude % 10}';
-  }
 }

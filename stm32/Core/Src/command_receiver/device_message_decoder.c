@@ -113,6 +113,25 @@ static device_message_decode_result_t decode_command(
 			command->command.set_current_time.value_ms;
 		break;
 
+	case device_DeviceCommand_set_temperature_unit_tag:
+		message->type = DEVICE_MESSAGE_SET_TEMPERATURE_UNIT;
+
+		switch (command->command.set_temperature_unit.unit)
+		{
+		case device_TemperatureUnit_TEMPERATURE_UNIT_CELSIUS:
+			message->value.temperature_unit = DEVICE_TEMPERATURE_UNIT_CELSIUS;
+			break;
+
+		case device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT:
+			message->value.temperature_unit = DEVICE_TEMPERATURE_UNIT_FAHRENHEIT;
+			break;
+
+		default:
+			return DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE;
+		}
+
+		break;
+
 	case 0U:
 		return DEVICE_MESSAGE_DECODE_MISSING_COMMAND;
 

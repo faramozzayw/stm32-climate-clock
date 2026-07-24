@@ -129,20 +129,29 @@ class DeviceMessage extends $pb.GeneratedMessage {
   BridgeStatus ensureBridgeStatus() => $_ensure(2);
 }
 
-enum DeviceCommand_Command { setMaxTemp, setMinTemp, setCurrentTime, notSet }
+enum DeviceCommand_Command {
+  setMaxTemp,
+  setMinTemp,
+  setCurrentTime,
+  setTemperatureUnit,
+  notSet
+}
 
-/// A command sent from the phone to the STM32 through the ESP32 BLE/UART
+/// A command sent from a client device to the STM32 through the ESP32 BLE/UART
 /// bridge. Exactly one command must be set.
 class DeviceCommand extends $pb.GeneratedMessage {
   factory DeviceCommand({
     SetMaxTemp? setMaxTemp,
     SetMinTemp? setMinTemp,
     SetCurrentTime? setCurrentTime,
+    SetTemperatureUnit? setTemperatureUnit,
   }) {
     final result = create();
     if (setMaxTemp != null) result.setMaxTemp = setMaxTemp;
     if (setMinTemp != null) result.setMinTemp = setMinTemp;
     if (setCurrentTime != null) result.setCurrentTime = setCurrentTime;
+    if (setTemperatureUnit != null)
+      result.setTemperatureUnit = setTemperatureUnit;
     return result;
   }
 
@@ -160,19 +169,22 @@ class DeviceCommand extends $pb.GeneratedMessage {
     1: DeviceCommand_Command.setMaxTemp,
     2: DeviceCommand_Command.setMinTemp,
     3: DeviceCommand_Command.setCurrentTime,
+    4: DeviceCommand_Command.setTemperatureUnit,
     0: DeviceCommand_Command.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'DeviceCommand',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
       createEmptyInstance: create)
-    ..oo(0, [1, 2, 3])
+    ..oo(0, [1, 2, 3, 4])
     ..aOM<SetMaxTemp>(1, _omitFieldNames ? '' : 'setMaxTemp',
         subBuilder: SetMaxTemp.create)
     ..aOM<SetMinTemp>(2, _omitFieldNames ? '' : 'setMinTemp',
         subBuilder: SetMinTemp.create)
     ..aOM<SetCurrentTime>(3, _omitFieldNames ? '' : 'setCurrentTime',
         subBuilder: SetCurrentTime.create)
+    ..aOM<SetTemperatureUnit>(4, _omitFieldNames ? '' : 'setTemperatureUnit',
+        subBuilder: SetTemperatureUnit.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -197,11 +209,13 @@ class DeviceCommand extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   @$pb.TagNumber(2)
   @$pb.TagNumber(3)
+  @$pb.TagNumber(4)
   DeviceCommand_Command whichCommand() =>
       _DeviceCommand_CommandByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(1)
   @$pb.TagNumber(2)
   @$pb.TagNumber(3)
+  @$pb.TagNumber(4)
   void clearCommand() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -236,6 +250,17 @@ class DeviceCommand extends $pb.GeneratedMessage {
   void clearSetCurrentTime() => $_clearField(3);
   @$pb.TagNumber(3)
   SetCurrentTime ensureSetCurrentTime() => $_ensure(2);
+
+  @$pb.TagNumber(4)
+  SetTemperatureUnit get setTemperatureUnit => $_getN(3);
+  @$pb.TagNumber(4)
+  set setTemperatureUnit(SetTemperatureUnit value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSetTemperatureUnit() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSetTemperatureUnit() => $_clearField(4);
+  @$pb.TagNumber(4)
+  SetTemperatureUnit ensureSetTemperatureUnit() => $_ensure(3);
 }
 
 class SetMaxTemp extends $pb.GeneratedMessage {
@@ -512,6 +537,61 @@ class SetCurrentTime extends $pb.GeneratedMessage {
   $core.bool hasValueMs() => $_has(0);
   @$pb.TagNumber(1)
   void clearValueMs() => $_clearField(1);
+}
+
+class SetTemperatureUnit extends $pb.GeneratedMessage {
+  factory SetTemperatureUnit({
+    TemperatureUnit? unit,
+  }) {
+    final result = create();
+    if (unit != null) result.unit = unit;
+    return result;
+  }
+
+  SetTemperatureUnit._();
+
+  factory SetTemperatureUnit.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory SetTemperatureUnit.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetTemperatureUnit',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
+      createEmptyInstance: create)
+    ..aE<TemperatureUnit>(1, _omitFieldNames ? '' : 'unit',
+        enumValues: TemperatureUnit.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetTemperatureUnit clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetTemperatureUnit copyWith(void Function(SetTemperatureUnit) updates) =>
+      super.copyWith((message) => updates(message as SetTemperatureUnit))
+          as SetTemperatureUnit;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SetTemperatureUnit create() => SetTemperatureUnit._();
+  @$core.override
+  SetTemperatureUnit createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static SetTemperatureUnit getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetTemperatureUnit>(create);
+  static SetTemperatureUnit? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  TemperatureUnit get unit => $_getN(0);
+  @$pb.TagNumber(1)
+  set unit(TemperatureUnit value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUnit() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUnit() => $_clearField(1);
 }
 
 class DeviceTelemetry extends $pb.GeneratedMessage {

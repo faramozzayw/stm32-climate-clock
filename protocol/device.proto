@@ -11,13 +11,14 @@ message DeviceMessage {
   }
 }
 
-// A command sent from the phone to the STM32 through the ESP32 BLE/UART
+// A command sent from a client device to the STM32 through the ESP32 BLE/UART
 // bridge. Exactly one command must be set.
 message DeviceCommand {
   oneof command {
     SetMaxTemp set_max_temp = 1;
     SetMinTemp set_min_temp = 2;
     SetCurrentTime set_current_time = 3;
+    SetTemperatureUnit set_temperature_unit = 4;
   }
 }
 
@@ -46,6 +47,15 @@ message SetMinHumidity {
 message SetCurrentTime {
   // Current time in milliseconds.
   uint64 value_ms = 1;
+}
+
+enum TemperatureUnit {
+  TEMPERATURE_UNIT_CELSIUS = 0;
+  TEMPERATURE_UNIT_FAHRENHEIT = 1;
+}
+
+message SetTemperatureUnit {
+  TemperatureUnit unit = 1;
 }
 
 message DeviceTelemetry {

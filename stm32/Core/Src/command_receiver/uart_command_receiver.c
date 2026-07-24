@@ -28,6 +28,8 @@ void uart_command_receiver_init(
 	commands->values.min_temp_updated = false;
 	commands->values.max_temp_updated = false;
 	commands->values.current_time_updated = false;
+	commands->values.temperature_unit = DEVICE_TEMPERATURE_UNIT_CELSIUS;
+	commands->values.temperature_unit_updated = false;
 	commands->values.ble_connection_state = BLE_CONNECTION_STATE_DISCONNECTED;
 
 	commands->stats.rx_byte_count = 0U;
@@ -191,6 +193,15 @@ static void apply_decoded_message(uart_command_receiver_t *commands,
 		commands->values.current_time_ms = message->value.current_time_ms;
 		commands->values.current_time_updated = true;
 		printf("[USART1] SetCurrentTime received\r\n");
+		break;
+
+	case DEVICE_MESSAGE_SET_TEMPERATURE_UNIT:
+		commands->values.temperature_unit = message->value.temperature_unit;
+		commands->values.temperature_unit_updated = true;
+		printf("[USART1] Temperature unit = %c\r\n",
+			commands->values.temperature_unit == DEVICE_TEMPERATURE_UNIT_FAHRENHEIT
+				? 'F'
+				: 'C');
 		break;
 
 	case DEVICE_MESSAGE_BLE_CONNECTION_STATE:

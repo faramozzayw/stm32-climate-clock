@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../utils/temperature.dart';
+
 enum _TemperatureState { normal, belowMinimum, aboveMaximum }
 
 class TemperatureNotificationService {
@@ -101,6 +103,7 @@ class TemperatureNotificationService {
     required int currentTemperature,
     required int minTemperature,
     required int maxTemperature,
+    required bool fahrenheit,
   }) async {
     final _TemperatureState nextState;
     if (currentTemperature < minTemperature) {
@@ -122,16 +125,18 @@ class TemperatureNotificationService {
           title: '🥶 Temperature below minimum',
           body:
               '🌡️ Current temperature is '
-              '${_formatTemperature(currentTemperature)} °C. '
-              'Minimum is ${_formatTemperature(minTemperature)} °C.',
+              '${formatTemperatureWithUnit(currentTemperature, fahrenheit: fahrenheit)}. '
+              'Minimum is '
+              '${formatTemperatureWithUnit(minTemperature, fahrenheit: fahrenheit)}.',
         );
       case _TemperatureState.aboveMaximum:
         await _show(
           title: '🔥 Temperature above maximum',
           body:
               '🌡️ Current temperature is '
-              '${_formatTemperature(currentTemperature)} °C. '
-              'Maximum is ${_formatTemperature(maxTemperature)} °C.',
+              '${formatTemperatureWithUnit(currentTemperature, fahrenheit: fahrenheit)}. '
+              'Maximum is '
+              '${formatTemperatureWithUnit(maxTemperature, fahrenheit: fahrenheit)}.',
         );
     }
   }
@@ -151,9 +156,4 @@ class TemperatureNotificationService {
     );
   }
 
-  String _formatTemperature(int temperature) {
-    final magnitude = temperature.abs();
-    final sign = temperature < 0 ? '-' : '';
-    return '$sign${magnitude ~/ 10}.${magnitude % 10}';
-  }
 }

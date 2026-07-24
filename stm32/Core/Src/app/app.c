@@ -129,6 +129,16 @@ static void apply_received_messages(app_t *app)
 		values->current_time_updated = false;
 	}
 
+	if (values->temperature_unit_updated)
+	{
+		temperature_unit_t unit = values->temperature_unit == DEVICE_TEMPERATURE_UNIT_FAHRENHEIT
+									  ? TEMPERATURE_UNIT_FAHRENHEIT
+									  : TEMPERATURE_UNIT_CELSIUS;
+
+		app_set_temperature_unit(app, unit);
+		values->temperature_unit_updated = false;
+	}
+
 	if (app->ble_connection_state != values->ble_connection_state)
 	{
 		set_ble_connection_state(app, values->ble_connection_state);

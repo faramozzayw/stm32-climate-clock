@@ -176,7 +176,7 @@ void setup()
 	server->setCallbacks(new ServerCallbacks());
 	BLEService *service = server->createService(SERVICE_UUID);
 
-	// Phone -> ESP32 -> STM32
+	// BLE client -> ESP32 -> STM32
 	BLECharacteristic *rxCharacteristic = service->createCharacteristic(
 		CHARACTERISTIC_RX_UUID,
 		BLECharacteristic::PROPERTY_WRITE |
@@ -184,7 +184,7 @@ void setup()
 
 	rxCharacteristic->setCallbacks(new RxCallbacks());
 
-	// Optional notification characteristic for STM32 -> phone
+	// Optional notification characteristic for STM32 -> BLE client
 	txCharacteristic = service->createCharacteristic(
 		CHARACTERISTIC_TX_UUID,
 		BLECharacteristic::PROPERTY_NOTIFY);
@@ -211,7 +211,7 @@ void setup()
 
 void loop()
 {
-	// STM32 -> ESP32 -> phone
+	// STM32 -> ESP32 -> BLE client
 	while (STM32Serial.available())
 	{
 		uart_frame_view_t frame;

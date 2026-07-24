@@ -15,6 +15,20 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use temperatureUnitDescriptor instead')
+const TemperatureUnit$json = {
+  '1': 'TemperatureUnit',
+  '2': [
+    {'1': 'TEMPERATURE_UNIT_CELSIUS', '2': 0},
+    {'1': 'TEMPERATURE_UNIT_FAHRENHEIT', '2': 1},
+  ],
+};
+
+/// Descriptor for `TemperatureUnit`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List temperatureUnitDescriptor = $convert.base64Decode(
+    'Cg9UZW1wZXJhdHVyZVVuaXQSHAoYVEVNUEVSQVRVUkVfVU5JVF9DRUxTSVVTEAASHwobVEVNUE'
+    'VSQVRVUkVfVU5JVF9GQUhSRU5IRUlUEAE=');
+
 @$core.Deprecated('Use bleConnectionStateDescriptor instead')
 const BleConnectionState$json = {
   '1': 'BleConnectionState',
@@ -108,6 +122,15 @@ const DeviceCommand$json = {
       '9': 0,
       '10': 'setCurrentTime'
     },
+    {
+      '1': 'set_temperature_unit',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.device.SetTemperatureUnit',
+      '9': 0,
+      '10': 'setTemperatureUnit'
+    },
   ],
   '8': [
     {'1': 'command'},
@@ -119,7 +142,9 @@ final $typed_data.Uint8List deviceCommandDescriptor = $convert.base64Decode(
     'Cg1EZXZpY2VDb21tYW5kEjYKDHNldF9tYXhfdGVtcBgBIAEoCzISLmRldmljZS5TZXRNYXhUZW'
     '1wSABSCnNldE1heFRlbXASNgoMc2V0X21pbl90ZW1wGAIgASgLMhIuZGV2aWNlLlNldE1pblRl'
     'bXBIAFIKc2V0TWluVGVtcBJCChBzZXRfY3VycmVudF90aW1lGAMgASgLMhYuZGV2aWNlLlNldE'
-    'N1cnJlbnRUaW1lSABSDnNldEN1cnJlbnRUaW1lQgkKB2NvbW1hbmQ=');
+    'N1cnJlbnRUaW1lSABSDnNldEN1cnJlbnRUaW1lEk4KFHNldF90ZW1wZXJhdHVyZV91bml0GAQg'
+    'ASgLMhouZGV2aWNlLlNldFRlbXBlcmF0dXJlVW5pdEgAUhJzZXRUZW1wZXJhdHVyZVVuaXRCCQ'
+    'oHY29tbWFuZA==');
 
 @$core.Deprecated('Use setMaxTempDescriptor instead')
 const SetMaxTemp$json = {
@@ -180,6 +205,26 @@ const SetCurrentTime$json = {
 /// Descriptor for `SetCurrentTime`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List setCurrentTimeDescriptor = $convert.base64Decode(
     'Cg5TZXRDdXJyZW50VGltZRIZCgh2YWx1ZV9tcxgBIAEoBFIHdmFsdWVNcw==');
+
+@$core.Deprecated('Use setTemperatureUnitDescriptor instead')
+const SetTemperatureUnit$json = {
+  '1': 'SetTemperatureUnit',
+  '2': [
+    {
+      '1': 'unit',
+      '3': 1,
+      '4': 1,
+      '5': 14,
+      '6': '.device.TemperatureUnit',
+      '10': 'unit'
+    },
+  ],
+};
+
+/// Descriptor for `SetTemperatureUnit`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setTemperatureUnitDescriptor = $convert.base64Decode(
+    'ChJTZXRUZW1wZXJhdHVyZVVuaXQSKwoEdW5pdBgBIAEoDjIXLmRldmljZS5UZW1wZXJhdHVyZV'
+    'VuaXRSBHVuaXQ=');
 
 @$core.Deprecated('Use deviceTelemetryDescriptor instead')
 const DeviceTelemetry$json = {

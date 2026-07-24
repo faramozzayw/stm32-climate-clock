@@ -273,6 +273,17 @@ static bool test_decoder_decodes_each_command(void)
 		  DEVICE_MESSAGE_DECODE_OK);
 	CHECK(decoded.type == DEVICE_MESSAGE_SET_CURRENT_TIME);
 	CHECK(decoded.value.current_time_ms == UINT64_C(1721234567890));
+
+	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf.which_command = device_DeviceCommand_set_temperature_unit_tag;
+	protobuf.command.set_temperature_unit.unit =
+		device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT;
+	payload_length = encode_command(&protobuf, payload);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_SET_TEMPERATURE_UNIT);
+	CHECK(decoded.value.temperature_unit ==
+		  DEVICE_TEMPERATURE_UNIT_FAHRENHEIT);
 	return true;
 }
 
@@ -376,6 +387,8 @@ static bool test_receiver_initializes_and_rearms_uart(void)
 	CHECK(!receiver.values.min_temp_updated);
 	CHECK(!receiver.values.max_temp_updated);
 	CHECK(!receiver.values.current_time_updated);
+	CHECK(receiver.values.temperature_unit == DEVICE_TEMPERATURE_UNIT_CELSIUS);
+	CHECK(!receiver.values.temperature_unit_updated);
 	CHECK(receiver.values.ble_connection_state ==
 		  BLE_CONNECTION_STATE_DISCONNECTED);
 	CHECK(uart_command_receiver_rx_byte_ptr(&receiver) == &receiver.rx.byte);
@@ -464,6 +477,18 @@ static bool test_receiver_applies_framed_commands_end_to_end(void)
 	uart_command_receiver_poll(&receiver);
 	CHECK(receiver.values.current_time_ms == UINT64_C(9876543210));
 	CHECK(receiver.values.current_time_updated);
+
+	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf.which_command = device_DeviceCommand_set_temperature_unit_tag;
+	protobuf.command.set_temperature_unit.unit =
+		device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT;
+	payload_length = encode_command(&protobuf, payload);
+	frame_length = make_frame(payload, payload_length, frame);
+	receiver_feed(&receiver, frame, frame_length);
+	uart_command_receiver_poll(&receiver);
+	CHECK(receiver.values.temperature_unit ==
+		  DEVICE_TEMPERATURE_UNIT_FAHRENHEIT);
+	CHECK(receiver.values.temperature_unit_updated);
 
 	{
 		device_DeviceMessage message = device_DeviceMessage_init_zero;

@@ -10,6 +10,11 @@ void main() {
       DeviceCommand(
         setCurrentTime: SetCurrentTime(valueMs: Int64(1700000000000)),
       ),
+      DeviceCommand(
+        setTemperatureUnit: SetTemperatureUnit(
+          unit: TemperatureUnit.TEMPERATURE_UNIT_FAHRENHEIT,
+        ),
+      ),
     ];
     final messages = [
       for (final command in commands) DeviceMessage(command: command),
@@ -46,6 +51,7 @@ void main() {
       0xBC,
       0x31,
     ]);
+    expect(messages[3].writeToBuffer(), [0x0A, 0x04, 0x22, 0x02, 0x08, 0x01]);
 
     expect(
       DeviceMessage.fromBuffer(
@@ -80,6 +86,12 @@ void main() {
         messages[2].writeToBuffer(),
       ).command.setCurrentTime.valueMs,
       Int64(1700000000000),
+    );
+    expect(
+      DeviceMessage.fromBuffer(
+        messages[3].writeToBuffer(),
+      ).command.setTemperatureUnit.unit,
+      TemperatureUnit.TEMPERATURE_UNIT_FAHRENHEIT,
     );
   });
 

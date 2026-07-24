@@ -10,6 +10,11 @@
 #endif
 
 /* Enum definitions */
+typedef enum _device_TemperatureUnit {
+    device_TemperatureUnit_TEMPERATURE_UNIT_CELSIUS = 0,
+    device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT = 1
+} device_TemperatureUnit;
+
 typedef enum _device_BleConnectionState {
     device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED = 0,
     device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING = 1,
@@ -45,7 +50,11 @@ typedef struct _device_SetCurrentTime {
     uint64_t value_ms;
 } device_SetCurrentTime;
 
-/* A command sent from the phone to the STM32 through the ESP32 BLE/UART
+typedef struct _device_SetTemperatureUnit {
+    device_TemperatureUnit unit;
+} device_SetTemperatureUnit;
+
+/* A command sent from a client device to the STM32 through the ESP32 BLE/UART
  bridge. Exactly one command must be set. */
 typedef struct _device_DeviceCommand {
     pb_size_t which_command;
@@ -53,6 +62,7 @@ typedef struct _device_DeviceCommand {
         device_SetMaxTemp set_max_temp;
         device_SetMinTemp set_min_temp;
         device_SetCurrentTime set_current_time;
+        device_SetTemperatureUnit set_temperature_unit;
     } command;
 } device_DeviceCommand;
 
@@ -86,6 +96,10 @@ extern "C" {
 #endif
 
 /* Helper constants for enums */
+#define _device_TemperatureUnit_MIN device_TemperatureUnit_TEMPERATURE_UNIT_CELSIUS
+#define _device_TemperatureUnit_MAX device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT
+#define _device_TemperatureUnit_ARRAYSIZE ((device_TemperatureUnit)(device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT+1))
+
 #define _device_BleConnectionState_MIN device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED
 #define _device_BleConnectionState_MAX device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING
 #define _device_BleConnectionState_ARRAYSIZE ((device_BleConnectionState)(device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING+1))
@@ -96,6 +110,8 @@ extern "C" {
 
 
 
+
+#define device_SetTemperatureUnit_unit_ENUMTYPE device_TemperatureUnit
 
 
 #define device_BridgeStatus_ble_connection_state_ENUMTYPE device_BleConnectionState
@@ -109,6 +125,7 @@ extern "C" {
 #define device_SetMaxHumidity_init_default       {0}
 #define device_SetMinHumidity_init_default       {0}
 #define device_SetCurrentTime_init_default       {0}
+#define device_SetTemperatureUnit_init_default   {_device_TemperatureUnit_MIN}
 #define device_DeviceTelemetry_init_default      {0, 0, 0}
 #define device_BridgeStatus_init_default         {_device_BleConnectionState_MIN}
 #define device_DeviceMessage_init_zero           {0, {device_DeviceCommand_init_zero}}
@@ -118,6 +135,7 @@ extern "C" {
 #define device_SetMaxHumidity_init_zero          {0}
 #define device_SetMinHumidity_init_zero          {0}
 #define device_SetCurrentTime_init_zero          {0}
+#define device_SetTemperatureUnit_init_zero      {_device_TemperatureUnit_MIN}
 #define device_DeviceTelemetry_init_zero         {0, 0, 0}
 #define device_BridgeStatus_init_zero            {_device_BleConnectionState_MIN}
 
@@ -127,9 +145,11 @@ extern "C" {
 #define device_SetMaxHumidity_value_tag          1
 #define device_SetMinHumidity_value_tag          1
 #define device_SetCurrentTime_value_ms_tag       1
+#define device_SetTemperatureUnit_unit_tag       1
 #define device_DeviceCommand_set_max_temp_tag    1
 #define device_DeviceCommand_set_min_temp_tag    2
 #define device_DeviceCommand_set_current_time_tag 3
+#define device_DeviceCommand_set_temperature_unit_tag 4
 #define device_DeviceTelemetry_current_temp_tag  1
 #define device_DeviceTelemetry_min_temp_tag      2
 #define device_DeviceTelemetry_max_temp_tag      3
@@ -152,12 +172,14 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,bridge_status,payload.bridge_status)
 #define device_DeviceCommand_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_max_temp,command.set_max_temp),   1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_min_temp,command.set_min_temp),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_current_time,command.set_current_time),   3)
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_current_time,command.set_current_time),   3) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_temperature_unit,command.set_temperature_unit),   4)
 #define device_DeviceCommand_CALLBACK NULL
 #define device_DeviceCommand_DEFAULT NULL
 #define device_DeviceCommand_command_set_max_temp_MSGTYPE device_SetMaxTemp
 #define device_DeviceCommand_command_set_min_temp_MSGTYPE device_SetMinTemp
 #define device_DeviceCommand_command_set_current_time_MSGTYPE device_SetCurrentTime
+#define device_DeviceCommand_command_set_temperature_unit_MSGTYPE device_SetTemperatureUnit
 
 #define device_SetMaxTemp_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   value,             1)
@@ -184,6 +206,11 @@ X(a, STATIC,   SINGULAR, UINT64,   value_ms,          1)
 #define device_SetCurrentTime_CALLBACK NULL
 #define device_SetCurrentTime_DEFAULT NULL
 
+#define device_SetTemperatureUnit_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    unit,              1)
+#define device_SetTemperatureUnit_CALLBACK NULL
+#define device_SetTemperatureUnit_DEFAULT NULL
+
 #define device_DeviceTelemetry_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   current_temp,      1) \
 X(a, STATIC,   SINGULAR, SINT32,   min_temp,          2) \
@@ -203,6 +230,7 @@ extern const pb_msgdesc_t device_SetMinTemp_msg;
 extern const pb_msgdesc_t device_SetMaxHumidity_msg;
 extern const pb_msgdesc_t device_SetMinHumidity_msg;
 extern const pb_msgdesc_t device_SetCurrentTime_msg;
+extern const pb_msgdesc_t device_SetTemperatureUnit_msg;
 extern const pb_msgdesc_t device_DeviceTelemetry_msg;
 extern const pb_msgdesc_t device_BridgeStatus_msg;
 
@@ -214,6 +242,7 @@ extern const pb_msgdesc_t device_BridgeStatus_msg;
 #define device_SetMaxHumidity_fields &device_SetMaxHumidity_msg
 #define device_SetMinHumidity_fields &device_SetMinHumidity_msg
 #define device_SetCurrentTime_fields &device_SetCurrentTime_msg
+#define device_SetTemperatureUnit_fields &device_SetTemperatureUnit_msg
 #define device_DeviceTelemetry_fields &device_DeviceTelemetry_msg
 #define device_BridgeStatus_fields &device_BridgeStatus_msg
 
@@ -228,6 +257,7 @@ extern const pb_msgdesc_t device_BridgeStatus_msg;
 #define device_SetMaxTemp_size                   6
 #define device_SetMinHumidity_size               6
 #define device_SetMinTemp_size                   6
+#define device_SetTemperatureUnit_size           2
 
 #ifdef __cplusplus
 } /* extern "C" */

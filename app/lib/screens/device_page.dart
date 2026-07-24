@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../generated/device.pb.dart';
 import '../services/device_ble_service.dart';
 import '../services/temperature_notification_service.dart';
+import '../utils/temperature.dart';
 import '../widgets/connection_card.dart';
 import '../widgets/current_temperature_card.dart';
 import '../widgets/page_header.dart';
@@ -29,6 +30,7 @@ class _DevicePageState extends State<DevicePage> {
   StreamSubscription<bool>? _connectionSubscription;
   StreamSubscription<DeviceTelemetry>? _telemetrySubscription;
   bool _busy = false;
+  bool _fahrenheit = false;
   String _status = 'Disconnected';
   int? _currentTemperature;
   int? _deviceMinTemperature;
@@ -80,6 +82,7 @@ class _DevicePageState extends State<DevicePage> {
       if (mounted) {
         setState(() => _status = 'Connected to ${DeviceBleService.deviceName}');
       }
+      await _sendTemperatureUnit(announce: false);
     } catch (error) {
       if (mounted) setState(() => _status = _friendlyError(error));
     } finally {
@@ -93,7 +96,7 @@ class _DevicePageState extends State<DevicePage> {
     final controller = maximum ? _maxController : _minController;
     final tenths = _parseTemperature(controller.text);
     if (tenths == null) {
-      _showMessage('Enter a temperature from -100 to 100 with one decimal.');
+      _showMessage('Enter a valid temperature with one decimal place.');
       return;
     }
 
@@ -116,21 +119,78 @@ class _DevicePageState extends State<DevicePage> {
     await _send(command, 'Current device time sent');
   }
 
-  Future<void> _send(DeviceCommand command, String successMessage) async {
+  Future<void> _sendTemperatureUnit({bool announce = true}) async {
+    final command = DeviceCommand(
+      setTemperatureUnit: SetTemperatureUnit(
+        unit: _fahrenheit
+            ? TemperatureUnit.TEMPERATURE_UNIT_FAHRENHEIT
+            : TemperatureUnit.TEMPERATURE_UNIT_CELSIUS,
+      ),
+    );
+    await _send(command, announce ? 'Temperature unit changed' : null);
+  }
+
+  Future<void> _send(DeviceCommand command, String? successMessage) async {
     try {
       await _ble.send(command);
-      _showMessage(successMessage);
+      if (successMessage != null) {
+        _showMessage(successMessage);
+      }
     } catch (error) {
       _showMessage(_friendlyError(error));
     }
   }
 
   int? _parseTemperature(String text) {
+    final displayedTenths = _parseDisplayedTemperature(text);
+    if (displayedTenths == null) return null;
+
+    final celsiusTenths = _toCelsius(displayedTenths, _fahrenheit);
+    return celsiusTenths >= -32768 && celsiusTenths <= 32767
+        ? celsiusTenths
+        : null;
+  }
+
+  int? _parseDisplayedTemperature(String text) {
     if (!RegExp(r'^-?\d+(?:\.\d)?$').hasMatch(text.trim())) return null;
     final value = double.tryParse(text.trim());
     if (value == null) return null;
-    final tenths = (value * 10).round();
-    return tenths >= -32768 && tenths <= 32767 ? tenths : null;
+    return (value * 10).round();
+  }
+
+  void _changeTemperatureUnit(bool fahrenheit) {
+    if (_fahrenheit == fahrenheit) return;
+
+    _convertController(_minController, _fahrenheit, fahrenheit);
+    _convertController(_maxController, _fahrenheit, fahrenheit);
+    setState(() => _fahrenheit = fahrenheit);
+
+    if (_connected) {
+      unawaited(_sendTemperatureUnit());
+    }
+  }
+
+  void _convertController(
+    TextEditingController controller,
+    bool fromFahrenheit,
+    bool toFahrenheit,
+  ) {
+    final displayedTenths = _parseDisplayedTemperature(controller.text);
+    if (displayedTenths == null) return;
+
+    final celsiusTenths = _toCelsius(displayedTenths, fromFahrenheit);
+    final converted = _fromCelsius(celsiusTenths, toFahrenheit);
+    controller.text = formatTemperatureTenths(converted);
+  }
+
+  int _toCelsius(int temperatureTenths, bool fahrenheit) {
+    if (!fahrenheit) return temperatureTenths;
+    return fahrenheitToCelsiusTenths(temperatureTenths);
+  }
+
+  int _fromCelsius(int celsiusTenths, bool fahrenheit) {
+    if (!fahrenheit) return celsiusTenths;
+    return celsiusToFahrenheitTenths(celsiusTenths);
   }
 
   void _applyTelemetry(DeviceTelemetry telemetry) {
@@ -148,6 +208,7 @@ class _DevicePageState extends State<DevicePage> {
             currentTemperature: telemetry.currentTemp,
             minTemperature: telemetry.minTemp,
             maxTemperature: telemetry.maxTemp,
+            fahrenheit: _fahrenheit,
           )
           .catchError(
             (Object error) =>
@@ -186,7 +247,10 @@ class _DevicePageState extends State<DevicePage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
             children: [
-              const PageHeader(),
+              PageHeader(
+                fahrenheit: _fahrenheit,
+                onTemperatureUnitChanged: _changeTemperatureUnit,
+              ),
               const SizedBox(height: 24),
               ConnectionCard(
                 connected: _connected,
@@ -195,7 +259,10 @@ class _DevicePageState extends State<DevicePage> {
                 onPressed: _busy ? null : (_connected ? _disconnect : _connect),
               ),
               const SizedBox(height: 14),
-              CurrentTemperatureCard(temperatureTenths: _currentTemperature),
+              CurrentTemperatureCard(
+                temperatureTenths: _currentTemperature,
+                fahrenheit: _fahrenheit,
+              ),
               const SizedBox(height: 26),
               Text(
                 'Temperature range',
@@ -210,6 +277,7 @@ class _DevicePageState extends State<DevicePage> {
                 surface: const Color(0xFFFFF0EE),
                 controller: _maxController,
                 currentLimitTenths: _deviceMaxTemperature,
+                fahrenheit: _fahrenheit,
                 onSend: _connected
                     ? () => _sendTemperature(maximum: true)
                     : null,
@@ -223,6 +291,7 @@ class _DevicePageState extends State<DevicePage> {
                 surface: const Color(0xFFECF5FF),
                 controller: _minController,
                 currentLimitTenths: _deviceMinTemperature,
+                fahrenheit: _fahrenheit,
                 onSend: _connected
                     ? () => _sendTemperature(maximum: false)
                     : null,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../utils/temperature.dart';
+
 class TemperatureCommand extends StatelessWidget {
   const TemperatureCommand({
     super.key,
@@ -11,6 +13,7 @@ class TemperatureCommand extends StatelessWidget {
     required this.surface,
     required this.controller,
     required this.currentLimitTenths,
+    required this.fahrenheit,
     required this.onSend,
   });
 
@@ -21,6 +24,7 @@ class TemperatureCommand extends StatelessWidget {
   final Color surface;
   final TextEditingController controller;
   final int? currentLimitTenths;
+  final bool fahrenheit;
   final VoidCallback? onSend;
 
   @override
@@ -67,9 +71,9 @@ class TemperatureCommand extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               currentLimitTenths == null
-                  ? 'Current device limit: --.- °C'
+                  ? 'Current device limit: --.- °${fahrenheit ? 'F' : 'C'}'
                   : 'Current device limit: '
-                        '${_formatTemperature(currentLimitTenths!)} °C',
+                        '${formatTemperatureWithUnit(currentLimitTenths!, fahrenheit: fahrenheit)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w700,
@@ -97,7 +101,7 @@ class TemperatureCommand extends StatelessWidget {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.8),
-                    suffixText: '°C',
+                    suffixText: '°${fahrenheit ? 'F' : 'C'}',
                     suffixStyle: TextStyle(
                       color: accent,
                       fontWeight: FontWeight.w700,
@@ -132,9 +136,4 @@ class TemperatureCommand extends StatelessWidget {
     );
   }
 
-  String _formatTemperature(int temperature) {
-    final magnitude = temperature.abs();
-    final sign = temperature < 0 ? '-' : '';
-    return '$sign${magnitude ~/ 10}.${magnitude % 10}';
-  }
 }

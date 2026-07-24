@@ -10,6 +10,7 @@ typedef enum
 	DEVICE_MESSAGE_SET_MAX_TEMP,
 	DEVICE_MESSAGE_SET_MIN_TEMP,
 	DEVICE_MESSAGE_SET_CURRENT_TIME,
+	DEVICE_MESSAGE_SET_TEMPERATURE_UNIT,
 	DEVICE_MESSAGE_BLE_CONNECTION_STATE,
 } device_message_type_t;
 
@@ -21,6 +22,12 @@ typedef enum
 	BLE_CONNECTION_STATE_DISCONNECTING,
 } ble_connection_state_t;
 
+typedef enum
+{
+	DEVICE_TEMPERATURE_UNIT_CELSIUS = 0,
+	DEVICE_TEMPERATURE_UNIT_FAHRENHEIT,
+} device_temperature_unit_t;
+
 typedef struct
 {
 	device_message_type_t type;
@@ -28,6 +35,7 @@ typedef struct
 	{
 		int16_t temperature;
 		uint64_t current_time_ms;
+		device_temperature_unit_t temperature_unit;
 		ble_connection_state_t ble_connection_state;
 	} value;
 } decoded_device_message_t;

@@ -36,10 +36,12 @@ typedef struct
 	int16_t min_temp;
 	int16_t max_temp;
 	uint64_t current_time_ms;
+	device_temperature_unit_t temperature_unit;
 	ble_connection_state_t ble_connection_state;
 	bool min_temp_updated;
 	bool max_temp_updated;
 	bool current_time_updated;
+	bool temperature_unit_updated;
 } uart_command_receiver_values_t;
 
 typedef struct
