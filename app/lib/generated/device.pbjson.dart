@@ -22,6 +22,7 @@ const BleConnectionState$json = {
     {'1': 'BLE_CONNECTION_STATE_DISCONNECTED', '2': 0},
     {'1': 'BLE_CONNECTION_STATE_CONNECTING', '2': 1},
     {'1': 'BLE_CONNECTION_STATE_CONNECTED', '2': 2},
+    {'1': 'BLE_CONNECTION_STATE_DISCONNECTING', '2': 3},
   ],
 };
 
@@ -29,7 +30,8 @@ const BleConnectionState$json = {
 final $typed_data.Uint8List bleConnectionStateDescriptor = $convert.base64Decode(
     'ChJCbGVDb25uZWN0aW9uU3RhdGUSJQohQkxFX0NPTk5FQ1RJT05fU1RBVEVfRElTQ09OTkVDVE'
     'VEEAASIwofQkxFX0NPTk5FQ1RJT05fU1RBVEVfQ09OTkVDVElORxABEiIKHkJMRV9DT05ORUNU'
-    'SU9OX1NUQVRFX0NPTk5FQ1RFRBAC');
+    'SU9OX1NUQVRFX0NPTk5FQ1RFRBACEiYKIkJMRV9DT05ORUNUSU9OX1NUQVRFX0RJU0NPTk5FQ1'
+    'RJTkcQAw==');
 
 @$core.Deprecated('Use deviceMessageDescriptor instead')
 const DeviceMessage$json = {

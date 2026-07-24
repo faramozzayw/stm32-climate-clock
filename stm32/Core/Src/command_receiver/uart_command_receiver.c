@@ -210,6 +210,10 @@ static void apply_decoded_message(uart_command_receiver_t *commands,
 		case BLE_CONNECTION_STATE_CONNECTED:
 			printf("[USART1] BLE connected\r\n");
 			break;
+
+		case BLE_CONNECTION_STATE_DISCONNECTING:
+			printf("[USART1] BLE disconnecting\r\n");
+			break;
 		}
 		break;
 

@@ -109,6 +109,12 @@ void main() {
         bleConnectionState: BleConnectionState.BLE_CONNECTION_STATE_CONNECTED,
       ),
     );
+    final disconnecting = DeviceMessage(
+      bridgeStatus: BridgeStatus(
+        bleConnectionState:
+            BleConnectionState.BLE_CONNECTION_STATE_DISCONNECTING,
+      ),
+    );
     final disconnected = DeviceMessage(
       bridgeStatus: BridgeStatus(
         bleConnectionState:
@@ -127,6 +133,12 @@ void main() {
         connected.writeToBuffer(),
       ).bridgeStatus.bleConnectionState,
       BleConnectionState.BLE_CONNECTION_STATE_CONNECTED,
+    );
+    expect(
+      DeviceMessage.fromBuffer(
+        disconnecting.writeToBuffer(),
+      ).bridgeStatus.bleConnectionState,
+      BleConnectionState.BLE_CONNECTION_STATE_DISCONNECTING,
     );
     expect(
       DeviceMessage.fromBuffer(

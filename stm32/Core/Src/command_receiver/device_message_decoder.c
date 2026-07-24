@@ -57,6 +57,11 @@ device_message_decode_result_t device_message_decode(
 				BLE_CONNECTION_STATE_CONNECTED;
 			break;
 
+		case device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING:
+			message->value.ble_connection_state =
+				BLE_CONNECTION_STATE_DISCONNECTING;
+			break;
+
 		default:
 			return DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE;
 		}

@@ -22,6 +22,7 @@ BLECharacteristic *txCharacteristic;
 uart_frame_parser_t stm32FrameParser;
 volatile bool bleLinkConnected = false;
 volatile bool bleNotificationsEnabled = false;
+volatile bool bleWasReady = false;
 
 static bool writeUartFrame(const uint8_t *payload, size_t length)
 {
@@ -105,9 +106,21 @@ class TxDescriptorCallbacks : public BLEDescriptorCallbacks
 			return;
 		}
 
-		device_BleConnectionState state = bleNotificationsEnabled
-											  ? device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED
-											  : device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING;
+		device_BleConnectionState state;
+
+		if (bleNotificationsEnabled)
+		{
+			bleWasReady = true;
+			state = device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED;
+		}
+		else if (bleWasReady)
+		{
+			state = device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING;
+		}
+		else
+		{
+			state = device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING;
+		}
 
 		if (!writeBleConnectionStatus(state))
 		{
@@ -123,6 +136,7 @@ class ServerCallbacks : public BLEServerCallbacks
 		(void)server;
 		bleLinkConnected = true;
 		bleNotificationsEnabled = false;
+		bleWasReady = false;
 
 		if (!writeBleConnectionStatus(
 				device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING))
@@ -135,6 +149,7 @@ class ServerCallbacks : public BLEServerCallbacks
 	{
 		bleLinkConnected = false;
 		bleNotificationsEnabled = false;
+		bleWasReady = false;
 
 		if (!writeBleConnectionStatus(
 				device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED))

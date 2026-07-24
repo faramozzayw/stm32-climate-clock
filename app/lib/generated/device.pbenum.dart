@@ -24,15 +24,19 @@ class BleConnectionState extends $pb.ProtobufEnum {
   static const BleConnectionState BLE_CONNECTION_STATE_CONNECTED =
       BleConnectionState._(
           2, _omitEnumNames ? '' : 'BLE_CONNECTION_STATE_CONNECTED');
+  static const BleConnectionState BLE_CONNECTION_STATE_DISCONNECTING =
+      BleConnectionState._(
+          3, _omitEnumNames ? '' : 'BLE_CONNECTION_STATE_DISCONNECTING');
 
   static const $core.List<BleConnectionState> values = <BleConnectionState>[
     BLE_CONNECTION_STATE_DISCONNECTED,
     BLE_CONNECTION_STATE_CONNECTING,
     BLE_CONNECTION_STATE_CONNECTED,
+    BLE_CONNECTION_STATE_DISCONNECTING,
   ];
 
   static final $core.List<BleConnectionState?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static BleConnectionState? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

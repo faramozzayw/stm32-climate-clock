@@ -302,6 +302,15 @@ static bool test_decoder_decodes_ble_connection_state(void)
 	CHECK(decoded.value.ble_connection_state == BLE_CONNECTION_STATE_CONNECTED);
 
 	protobuf.payload.bridge_status.ble_connection_state =
+		device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING;
+	payload_length = encode_message(&protobuf, payload);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
+	CHECK(decoded.value.ble_connection_state ==
+		  BLE_CONNECTION_STATE_DISCONNECTING);
+
+	protobuf.payload.bridge_status.ble_connection_state =
 		device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED;
 	payload_length = encode_message(&protobuf, payload);
 	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==

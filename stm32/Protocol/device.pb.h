@@ -13,7 +13,8 @@
 typedef enum _device_BleConnectionState {
     device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED = 0,
     device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING = 1,
-    device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED = 2
+    device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED = 2,
+    device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING = 3
 } device_BleConnectionState;
 
 /* Struct definitions */
@@ -86,8 +87,8 @@ extern "C" {
 
 /* Helper constants for enums */
 #define _device_BleConnectionState_MIN device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED
-#define _device_BleConnectionState_MAX device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED
-#define _device_BleConnectionState_ARRAYSIZE ((device_BleConnectionState)(device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED+1))
+#define _device_BleConnectionState_MAX device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING
+#define _device_BleConnectionState_ARRAYSIZE ((device_BleConnectionState)(device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING+1))
 
 
 

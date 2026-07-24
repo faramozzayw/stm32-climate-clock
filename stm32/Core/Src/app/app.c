@@ -12,7 +12,7 @@
 #define DEFAULT_MAX_TEMP 300
 
 #define CONNECTION_LED_PWM_CHANNEL TIM_CHANNEL_4
-#define CONNECTION_LED_BREATHE_HALF_CYCLE_MS 1000U
+#define CONNECTION_LED_BREATHE_HALF_CYCLE_MS 200U
 #define CONNECTION_LED_MIN_DUTY_PERCENT 10U
 #define CONNECTION_LED_MAX_DUTY_PERCENT 65U
 
@@ -37,6 +37,7 @@ static void update_connection_led(app_t *app)
 		break;
 
 	case BLE_CONNECTION_STATE_CONNECTING:
+	case BLE_CONNECTION_STATE_DISCONNECTING:
 	{
 		uint32_t phase = HAL_GetTick() %
 						 (CONNECTION_LED_BREATHE_HALF_CYCLE_MS * 2U);
@@ -63,9 +64,7 @@ static void update_connection_led(app_t *app)
 		duty);
 }
 
-static void set_ble_connection_state(
-	app_t *app,
-	ble_connection_state_t state)
+static void set_ble_connection_state(app_t *app, ble_connection_state_t state)
 {
 	app->ble_connection_state = state;
 	update_connection_led(app);

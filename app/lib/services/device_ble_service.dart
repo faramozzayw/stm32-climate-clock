@@ -17,6 +17,7 @@ class DeviceBleService {
   final _telemetry = StreamController<DeviceTelemetry>.broadcast();
   BluetoothDevice? _device;
   BluetoothCharacteristic? _rxCharacteristic;
+  BluetoothCharacteristic? _txCharacteristic;
   StreamSubscription<BluetoothConnectionState>? _deviceStateSubscription;
   StreamSubscription<List<int>>? _telemetrySubscription;
 
@@ -80,6 +81,7 @@ class DeviceBleService {
 
       _device = foundDevice;
       _rxCharacteristic = characteristic;
+      _txCharacteristic = txCharacteristic;
       _connectionChanges.add(true);
     } catch (_) {
       await _telemetrySubscription?.cancel();
@@ -95,6 +97,16 @@ class DeviceBleService {
   Future<void> disconnect() async {
     final device = _device;
     if (device == null) return;
+
+    final txCharacteristic = _txCharacteristic;
+    if (txCharacteristic != null) {
+      try {
+        await txCharacteristic.setNotifyValue(false);
+      } catch (_) {
+        // The physical link may already be gone.
+      }
+    }
+
     await device.disconnect();
     _clearConnection();
   }
@@ -114,7 +126,7 @@ class DeviceBleService {
   Future<void> dispose() async {
     await _telemetrySubscription?.cancel();
     await _deviceStateSubscription?.cancel();
-    await _device?.disconnect();
+    await disconnect();
     await _connectionChanges.close();
     await _telemetry.close();
   }
@@ -138,6 +150,7 @@ class DeviceBleService {
     _telemetrySubscription = null;
     _device = null;
     _rxCharacteristic = null;
+    _txCharacteristic = null;
     if (wasConnected && !_connectionChanges.isClosed) {
       _connectionChanges.add(false);
     }
