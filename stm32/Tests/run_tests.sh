@@ -27,6 +27,7 @@ mkdir -p "${build_dir}"
     -I../Protocol \
     -I../../third_party/nanopb \
     test_command_receiver.c \
+    ../Core/Src/byte_ring_buffer.c \
     ../Core/Src/command_receiver/uart_frame.c \
     ../Core/Src/command_receiver/device_message_decoder.c \
     ../Core/Src/command_receiver/uart_command_receiver.c \
@@ -45,6 +46,7 @@ mkdir -p "${build_dir}"
     test_pure_utils.c \
     ../Core/Src/temperature.c \
     ../Core/Src/byte_codec.c \
+    ../Core/Src/byte_ring_buffer.c \
     ../Core/Src/calendar_time.c \
     -lm \
     -o "${pure_utils_executable}"

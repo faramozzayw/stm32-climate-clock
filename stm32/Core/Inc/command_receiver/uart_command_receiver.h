@@ -3,19 +3,19 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "byte_ring_buffer.h"
 #include "command_receiver/device_message_decoder.h"
 #include "command_receiver/uart_frame.h"
 #include "usart.h"
 
-#define UART_COMMANDS_RX_LOG_SIZE 128U
+#define UART_COMMAND_RECEIVER_RX_CAPACITY 128U
 
 typedef struct
 {
 	UART_HandleTypeDef *huart;
 	uint8_t byte;
-	uint8_t buffer[UART_COMMANDS_RX_LOG_SIZE];
-	volatile uint16_t head;
-	volatile uint16_t tail;
+	uint8_t storage[UART_COMMAND_RECEIVER_RX_CAPACITY];
+	byte_ring_buffer_t bytes;
 } uart_command_receiver_rx_t;
 
 typedef struct

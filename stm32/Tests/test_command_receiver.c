@@ -382,7 +382,7 @@ static bool test_receiver_initializes_and_rearms_uart(void)
 	reset_uart_mock();
 	uart_command_receiver_init(&receiver, &huart);
 	CHECK(receiver.rx.huart == &huart);
-	CHECK(receiver.rx.head == 0U && receiver.rx.tail == 0U);
+	CHECK(byte_ring_buffer_is_empty(&receiver.rx.bytes));
 	CHECK(receiver.stats.rx_byte_count == 0U);
 	CHECK(!receiver.values.min_temp_updated);
 	CHECK(!receiver.values.max_temp_updated);
@@ -424,15 +424,15 @@ static bool test_receiver_tracks_rearm_failures_and_overflow(void)
 	CHECK(mock_receive_call_count == 0U);
 
 	uart_command_receiver_init(&receiver, &huart);
-	for (pos = 0U; pos < UART_COMMANDS_RX_LOG_SIZE; pos++)
+	for (pos = 0U; pos < UART_COMMAND_RECEIVER_RX_CAPACITY; pos++)
 	{
 		receiver.rx.byte = 0x00U;
 		uart_command_receiver_on_rx_complete(&receiver);
 	}
-	CHECK(receiver.stats.rx_byte_count == UART_COMMANDS_RX_LOG_SIZE);
+	CHECK(receiver.stats.rx_byte_count == UART_COMMAND_RECEIVER_RX_CAPACITY);
 	CHECK(receiver.stats.rx_overflow_count == 1U);
 	uart_command_receiver_poll(&receiver);
-	CHECK(receiver.rx.head == receiver.rx.tail);
+	CHECK(byte_ring_buffer_is_empty(&receiver.rx.bytes));
 	return true;
 }
 

@@ -4,7 +4,6 @@
 
 #include "command_receiver/device_message_decoder.h"
 
-static void log_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
 static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
 static void apply_decoded_message(uart_command_receiver_t *commands,
 	const decoded_device_message_t *message);
@@ -21,8 +20,10 @@ void uart_command_receiver_init(
 
 	commands->rx.huart = huart;
 	commands->rx.byte = 0U;
-	commands->rx.head = 0U;
-	commands->rx.tail = 0U;
+	byte_ring_buffer_init(
+		&commands->rx.bytes,
+		commands->rx.storage,
+		sizeof(commands->rx.storage));
 	uart_frame_parser_init(&commands->frame_parser);
 
 	commands->values.min_temp_updated = false;
@@ -61,7 +62,10 @@ void uart_command_receiver_on_rx_complete(uart_command_receiver_t *commands)
 	}
 
 	commands->stats.rx_byte_count++;
-	log_rx_byte(commands, commands->rx.byte);
+	if (!byte_ring_buffer_push(&commands->rx.bytes, commands->rx.byte))
+	{
+		commands->stats.rx_overflow_count++;
+	}
 
 	if (commands->rx.huart == NULL ||
 		HAL_UART_Receive_IT(commands->rx.huart, &commands->rx.byte, 1U) != HAL_OK)
@@ -77,14 +81,13 @@ void uart_command_receiver_poll(uart_command_receiver_t *commands)
 		return;
 	}
 
-	while (commands->rx.tail != commands->rx.head)
+	while (true)
 	{
-		uint8_t byte = commands->rx.buffer[commands->rx.tail];
+		uint8_t byte;
 
-		commands->rx.tail = (uint16_t)(commands->rx.tail + 1U);
-		if (commands->rx.tail >= UART_COMMANDS_RX_LOG_SIZE)
+		if (!byte_ring_buffer_pop(&commands->rx.bytes, &byte))
 		{
-			commands->rx.tail = 0U;
+			break;
 		}
 
 		process_rx_byte(commands, byte);
@@ -125,25 +128,6 @@ void uart_command_receiver_poll(uart_command_receiver_t *commands)
 		printf("[USART1] Protobuf decode errors: %lu\r\n",
 			(unsigned long)commands->stats.protobuf_decode_error_count);
 	}
-}
-
-static void log_rx_byte(uart_command_receiver_t *commands, uint8_t byte)
-{
-	uint16_t next_head = (uint16_t)(commands->rx.head + 1U);
-
-	if (next_head >= UART_COMMANDS_RX_LOG_SIZE)
-	{
-		next_head = 0U;
-	}
-
-	if (next_head == commands->rx.tail)
-	{
-		commands->stats.rx_overflow_count++;
-		return;
-	}
-
-	commands->rx.buffer[commands->rx.head] = byte;
-	commands->rx.head = next_head;
 }
 
 static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte)

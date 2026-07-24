@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "byte_codec.h"
+#include "byte_ring_buffer.h"
 #include "calendar_time.h"
 #include "temperature.h"
 
@@ -134,6 +135,71 @@ static bool test_calendar_time_rejects_unsupported_range(void)
 	return true;
 }
 
+static bool test_byte_ring_buffer_validates_initialization(void)
+{
+	byte_ring_buffer_t buffer = {0};
+	uint8_t storage[2];
+	uint8_t byte;
+
+	CHECK(!byte_ring_buffer_init(NULL, storage, sizeof(storage)));
+	CHECK(!byte_ring_buffer_init(&buffer, NULL, sizeof(storage)));
+	CHECK(!byte_ring_buffer_init(&buffer, storage, 1U));
+	CHECK(byte_ring_buffer_is_empty(&buffer));
+	CHECK(!byte_ring_buffer_push(&buffer, 1U));
+	CHECK(!byte_ring_buffer_pop(&buffer, &byte));
+	return true;
+}
+
+static bool test_byte_ring_buffer_preserves_fifo_order(void)
+{
+	byte_ring_buffer_t buffer;
+	uint8_t storage[4];
+	uint8_t byte;
+
+	CHECK(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
+	CHECK(byte_ring_buffer_is_empty(&buffer));
+	CHECK(byte_ring_buffer_push(&buffer, 10U));
+	CHECK(byte_ring_buffer_push(&buffer, 20U));
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 10U);
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 20U);
+	CHECK(byte_ring_buffer_is_empty(&buffer));
+	CHECK(!byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(!byte_ring_buffer_pop(&buffer, NULL));
+	return true;
+}
+
+static bool test_byte_ring_buffer_rejects_full_and_wraps(void)
+{
+	byte_ring_buffer_t buffer;
+	uint8_t storage[4];
+	uint8_t byte;
+
+	CHECK(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
+	CHECK(byte_ring_buffer_push(&buffer, 1U));
+	CHECK(byte_ring_buffer_push(&buffer, 2U));
+	CHECK(byte_ring_buffer_push(&buffer, 3U));
+	CHECK(!byte_ring_buffer_push(&buffer, 4U));
+
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 1U);
+	CHECK(byte_ring_buffer_push(&buffer, 4U));
+
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 2U);
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 3U);
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 4U);
+	CHECK(byte_ring_buffer_is_empty(&buffer));
+
+	CHECK(byte_ring_buffer_push(&buffer, 5U));
+	CHECK(byte_ring_buffer_pop(&buffer, &byte));
+	CHECK(byte == 5U);
+	return true;
+}
+
 typedef bool (*test_function_t)(void);
 
 typedef struct
@@ -154,6 +220,9 @@ int main(void)
 		{"calendar time converts Unix epoch", test_calendar_time_converts_unix_epoch},
 		{"calendar time handles leap day", test_calendar_time_handles_leap_day_and_milliseconds},
 		{"calendar time rejects unsupported range", test_calendar_time_rejects_unsupported_range},
+		{"byte ring buffer validates initialization", test_byte_ring_buffer_validates_initialization},
+		{"byte ring buffer preserves FIFO order", test_byte_ring_buffer_preserves_fifo_order},
+		{"byte ring buffer rejects full and wraps", test_byte_ring_buffer_rejects_full_and_wraps},
 	};
 	size_t pos;
 	size_t passed = 0U;
