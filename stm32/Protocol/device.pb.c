@@ -6,6 +6,9 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+PB_BIND(device_DeviceMessage, device_DeviceMessage, AUTO)
+
+
 PB_BIND(device_DeviceCommand, device_DeviceCommand, AUTO)
 
 
@@ -25,6 +28,11 @@ PB_BIND(device_SetCurrentTime, device_SetCurrentTime, AUTO)
 
 
 PB_BIND(device_DeviceTelemetry, device_DeviceTelemetry, AUTO)
+
+
+PB_BIND(device_BridgeStatus, device_BridgeStatus, AUTO)
+
+
 
 
 

@@ -26,7 +26,7 @@ mkdir -p "${build_dir}"
     -I../../third_party/nanopb \
     test_command_receiver.c \
     ../Core/Src/command_receiver/uart_frame.c \
-    ../Core/Src/command_receiver/device_command_decoder.c \
+    ../Core/Src/command_receiver/device_message_decoder.c \
     ../Core/Src/command_receiver/uart_command_receiver.c \
     ../Protocol/device.pb.c \
     ../../third_party/nanopb/pb_common.c \

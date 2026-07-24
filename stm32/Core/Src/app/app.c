@@ -11,15 +11,75 @@
 #define DEFAULT_MIN_TEMP 100
 #define DEFAULT_MAX_TEMP 300
 
+#define CONNECTION_LED_PWM_CHANNEL TIM_CHANNEL_4
+#define CONNECTION_LED_BREATHE_HALF_CYCLE_MS 1000U
+#define CONNECTION_LED_MIN_DUTY_PERCENT 10U
+#define CONNECTION_LED_MAX_DUTY_PERCENT 65U
+
+static void update_connection_led(app_t *app)
+{
+	TIM_HandleTypeDef *timer = hw479_get_timer(app->hw479);
+	uint32_t period = __HAL_TIM_GET_AUTORELOAD(timer) + 1U;
+	uint32_t min_duty =
+		(period * CONNECTION_LED_MIN_DUTY_PERCENT) / 100U;
+	uint32_t max_duty =
+		(period * CONNECTION_LED_MAX_DUTY_PERCENT) / 100U;
+	uint32_t duty;
+
+	switch (app->ble_connection_state)
+	{
+	case BLE_CONNECTION_STATE_DISCONNECTED:
+		duty = 0U;
+		break;
+
+	case BLE_CONNECTION_STATE_CONNECTED:
+		duty = max_duty;
+		break;
+
+	case BLE_CONNECTION_STATE_CONNECTING:
+	{
+		uint32_t phase = HAL_GetTick() %
+						 (CONNECTION_LED_BREATHE_HALF_CYCLE_MS * 2U);
+
+		if (phase > CONNECTION_LED_BREATHE_HALF_CYCLE_MS)
+		{
+			phase = (CONNECTION_LED_BREATHE_HALF_CYCLE_MS * 2U) - phase;
+		}
+
+		duty = min_duty +
+			   (((max_duty - min_duty) * phase) /
+				   CONNECTION_LED_BREATHE_HALF_CYCLE_MS);
+		break;
+	}
+
+	default:
+		duty = 0U;
+		break;
+	}
+
+	__HAL_TIM_SET_COMPARE(
+		timer,
+		CONNECTION_LED_PWM_CHANNEL,
+		duty);
+}
+
+static void set_ble_connection_state(
+	app_t *app,
+	ble_connection_state_t state)
+{
+	app->ble_connection_state = state;
+	update_connection_led(app);
+}
+
 /**
- * @brief Apply decoded UART command values to application state and devices.
+ * @brief Apply decoded UART messages to application state and devices.
  *
  * Temperature changes are persisted when EEPROM is available. Current-time
  * commands are converted from Unix epoch milliseconds before updating the RTC.
  *
  * @param app Initialized application state.
  */
-static void apply_uart_commands(app_t *app)
+static void apply_received_messages(app_t *app)
 {
 	uart_command_receiver_values_t *values = &app->command_receiver->values;
 
@@ -69,6 +129,11 @@ static void apply_uart_commands(app_t *app)
 
 		values->current_time_updated = false;
 	}
+
+	if (app->ble_connection_state != values->ble_connection_state)
+	{
+		set_ble_connection_state(app, values->ble_connection_state);
+	}
 }
 
 bool app_init(
@@ -83,13 +148,6 @@ bool app_init(
 {
 	AT24C256_Status eeprom_status;
 
-	if ((app == NULL) || (lcd == NULL) || (hw479 == NULL) ||
-		(rtc == NULL) || (eeprom == NULL) || (eeprom_i2c == NULL) ||
-		(command_receiver == NULL) || (command_uart == NULL))
-	{
-		return false;
-	}
-
 	app->lcd = lcd;
 	app->hw479 = hw479;
 	app->rtc = rtc;
@@ -103,6 +161,16 @@ bool app_init(
 
 	screen_init(app->lcd);
 	temperature_indicator_init(app->hw479);
+
+	if (HAL_TIM_PWM_Start(
+			hw479_get_timer(app->hw479),
+			CONNECTION_LED_PWM_CHANNEL) != HAL_OK)
+	{
+		printf("Connection LED PWM start failed\r\n");
+		return false;
+	}
+
+	set_ble_connection_state(app, BLE_CONNECTION_STATE_DISCONNECTED);
 
 	eeprom_status = at24c256_init(
 		app->eeprom,
@@ -160,7 +228,8 @@ void app_poll(app_t *app)
 	}
 
 	uart_command_receiver_poll(app->command_receiver);
-	apply_uart_commands(app);
+	apply_received_messages(app);
+	update_connection_led(app);
 }
 
 void app_update(app_t *app)

@@ -15,7 +15,119 @@ import 'dart:core' as $core;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'device.pbenum.dart';
+
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
+
+export 'device.pbenum.dart';
+
+enum DeviceMessage_Payload { command, telemetry, bridgeStatus, notSet }
+
+/// Envelope carried by every BLE and framed UART payload.
+class DeviceMessage extends $pb.GeneratedMessage {
+  factory DeviceMessage({
+    DeviceCommand? command,
+    DeviceTelemetry? telemetry,
+    BridgeStatus? bridgeStatus,
+  }) {
+    final result = create();
+    if (command != null) result.command = command;
+    if (telemetry != null) result.telemetry = telemetry;
+    if (bridgeStatus != null) result.bridgeStatus = bridgeStatus;
+    return result;
+  }
+
+  DeviceMessage._();
+
+  factory DeviceMessage.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeviceMessage.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, DeviceMessage_Payload>
+      _DeviceMessage_PayloadByTag = {
+    1: DeviceMessage_Payload.command,
+    2: DeviceMessage_Payload.telemetry,
+    3: DeviceMessage_Payload.bridgeStatus,
+    0: DeviceMessage_Payload.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeviceMessage',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
+      createEmptyInstance: create)
+    ..oo(0, [1, 2, 3])
+    ..aOM<DeviceCommand>(1, _omitFieldNames ? '' : 'command',
+        subBuilder: DeviceCommand.create)
+    ..aOM<DeviceTelemetry>(2, _omitFieldNames ? '' : 'telemetry',
+        subBuilder: DeviceTelemetry.create)
+    ..aOM<BridgeStatus>(3, _omitFieldNames ? '' : 'bridgeStatus',
+        subBuilder: BridgeStatus.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeviceMessage clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeviceMessage copyWith(void Function(DeviceMessage) updates) =>
+      super.copyWith((message) => updates(message as DeviceMessage))
+          as DeviceMessage;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeviceMessage create() => DeviceMessage._();
+  @$core.override
+  DeviceMessage createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeviceMessage getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeviceMessage>(create);
+  static DeviceMessage? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  @$pb.TagNumber(3)
+  DeviceMessage_Payload whichPayload() =>
+      _DeviceMessage_PayloadByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  @$pb.TagNumber(3)
+  void clearPayload() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  DeviceCommand get command => $_getN(0);
+  @$pb.TagNumber(1)
+  set command(DeviceCommand value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCommand() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCommand() => $_clearField(1);
+  @$pb.TagNumber(1)
+  DeviceCommand ensureCommand() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  DeviceTelemetry get telemetry => $_getN(1);
+  @$pb.TagNumber(2)
+  set telemetry(DeviceTelemetry value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTelemetry() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTelemetry() => $_clearField(2);
+  @$pb.TagNumber(2)
+  DeviceTelemetry ensureTelemetry() => $_ensure(1);
+
+  @$pb.TagNumber(3)
+  BridgeStatus get bridgeStatus => $_getN(2);
+  @$pb.TagNumber(3)
+  set bridgeStatus(BridgeStatus value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBridgeStatus() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBridgeStatus() => $_clearField(3);
+  @$pb.TagNumber(3)
+  BridgeStatus ensureBridgeStatus() => $_ensure(2);
+}
 
 enum DeviceCommand_Command { setMaxTemp, setMinTemp, setCurrentTime, notSet }
 
@@ -482,6 +594,63 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
   $core.bool hasMaxTemp() => $_has(2);
   @$pb.TagNumber(3)
   void clearMaxTemp() => $_clearField(3);
+}
+
+/// BLE connection state reported by the ESP32 bridge to the STM32.
+class BridgeStatus extends $pb.GeneratedMessage {
+  factory BridgeStatus({
+    BleConnectionState? bleConnectionState,
+  }) {
+    final result = create();
+    if (bleConnectionState != null)
+      result.bleConnectionState = bleConnectionState;
+    return result;
+  }
+
+  BridgeStatus._();
+
+  factory BridgeStatus.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory BridgeStatus.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BridgeStatus',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
+      createEmptyInstance: create)
+    ..aE<BleConnectionState>(1, _omitFieldNames ? '' : 'bleConnectionState',
+        enumValues: BleConnectionState.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BridgeStatus clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BridgeStatus copyWith(void Function(BridgeStatus) updates) =>
+      super.copyWith((message) => updates(message as BridgeStatus))
+          as BridgeStatus;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BridgeStatus create() => BridgeStatus._();
+  @$core.override
+  BridgeStatus createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static BridgeStatus getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<BridgeStatus>(create);
+  static BridgeStatus? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  BleConnectionState get bleConnectionState => $_getN(0);
+  @$pb.TagNumber(1)
+  set bleConnectionState(BleConnectionState value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBleConnectionState() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBleConnectionState() => $_clearField(1);
 }
 
 const $core.bool _omitFieldNames =

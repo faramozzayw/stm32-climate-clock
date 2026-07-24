@@ -15,6 +15,66 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use bleConnectionStateDescriptor instead')
+const BleConnectionState$json = {
+  '1': 'BleConnectionState',
+  '2': [
+    {'1': 'BLE_CONNECTION_STATE_DISCONNECTED', '2': 0},
+    {'1': 'BLE_CONNECTION_STATE_CONNECTING', '2': 1},
+    {'1': 'BLE_CONNECTION_STATE_CONNECTED', '2': 2},
+  ],
+};
+
+/// Descriptor for `BleConnectionState`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List bleConnectionStateDescriptor = $convert.base64Decode(
+    'ChJCbGVDb25uZWN0aW9uU3RhdGUSJQohQkxFX0NPTk5FQ1RJT05fU1RBVEVfRElTQ09OTkVDVE'
+    'VEEAASIwofQkxFX0NPTk5FQ1RJT05fU1RBVEVfQ09OTkVDVElORxABEiIKHkJMRV9DT05ORUNU'
+    'SU9OX1NUQVRFX0NPTk5FQ1RFRBAC');
+
+@$core.Deprecated('Use deviceMessageDescriptor instead')
+const DeviceMessage$json = {
+  '1': 'DeviceMessage',
+  '2': [
+    {
+      '1': 'command',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.device.DeviceCommand',
+      '9': 0,
+      '10': 'command'
+    },
+    {
+      '1': 'telemetry',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.device.DeviceTelemetry',
+      '9': 0,
+      '10': 'telemetry'
+    },
+    {
+      '1': 'bridge_status',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.device.BridgeStatus',
+      '9': 0,
+      '10': 'bridgeStatus'
+    },
+  ],
+  '8': [
+    {'1': 'payload'},
+  ],
+};
+
+/// Descriptor for `DeviceMessage`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deviceMessageDescriptor = $convert.base64Decode(
+    'Cg1EZXZpY2VNZXNzYWdlEjEKB2NvbW1hbmQYASABKAsyFS5kZXZpY2UuRGV2aWNlQ29tbWFuZE'
+    'gAUgdjb21tYW5kEjcKCXRlbGVtZXRyeRgCIAEoCzIXLmRldmljZS5EZXZpY2VUZWxlbWV0cnlI'
+    'AFIJdGVsZW1ldHJ5EjsKDWJyaWRnZV9zdGF0dXMYAyABKAsyFC5kZXZpY2UuQnJpZGdlU3RhdH'
+    'VzSABSDGJyaWRnZVN0YXR1c0IJCgdwYXlsb2Fk');
+
 @$core.Deprecated('Use deviceCommandDescriptor instead')
 const DeviceCommand$json = {
   '1': 'DeviceCommand',
@@ -133,3 +193,23 @@ const DeviceTelemetry$json = {
 final $typed_data.Uint8List deviceTelemetryDescriptor = $convert.base64Decode(
     'Cg9EZXZpY2VUZWxlbWV0cnkSIQoMY3VycmVudF90ZW1wGAEgASgRUgtjdXJyZW50VGVtcBIZCg'
     'htaW5fdGVtcBgCIAEoEVIHbWluVGVtcBIZCghtYXhfdGVtcBgDIAEoEVIHbWF4VGVtcA==');
+
+@$core.Deprecated('Use bridgeStatusDescriptor instead')
+const BridgeStatus$json = {
+  '1': 'BridgeStatus',
+  '2': [
+    {
+      '1': 'ble_connection_state',
+      '3': 1,
+      '4': 1,
+      '5': 14,
+      '6': '.device.BleConnectionState',
+      '10': 'bleConnectionState'
+    },
+  ],
+};
+
+/// Descriptor for `BridgeStatus`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List bridgeStatusDescriptor = $convert.base64Decode(
+    'CgxCcmlkZ2VTdGF0dXMSTAoUYmxlX2Nvbm5lY3Rpb25fc3RhdGUYASABKA4yGi5kZXZpY2UuQm'
+    'xlQ29ubmVjdGlvblN0YXRlUhJibGVDb25uZWN0aW9uU3RhdGU=');

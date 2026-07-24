@@ -9,6 +9,13 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+/* Enum definitions */
+typedef enum _device_BleConnectionState {
+    device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED = 0,
+    device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING = 1,
+    device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED = 2
+} device_BleConnectionState;
+
 /* Struct definitions */
 typedef struct _device_SetMaxTemp {
     /* Temperature in tenths of a degree Celsius.
@@ -57,12 +64,44 @@ typedef struct _device_DeviceTelemetry {
     int32_t max_temp;
 } device_DeviceTelemetry;
 
+/* BLE connection state reported by the ESP32 bridge to the STM32. */
+typedef struct _device_BridgeStatus {
+    device_BleConnectionState ble_connection_state;
+} device_BridgeStatus;
+
+/* Envelope carried by every BLE and framed UART payload. */
+typedef struct _device_DeviceMessage {
+    pb_size_t which_payload;
+    union _device_DeviceMessage_payload {
+        device_DeviceCommand command;
+        device_DeviceTelemetry telemetry;
+        device_BridgeStatus bridge_status;
+    } payload;
+} device_DeviceMessage;
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* Helper constants for enums */
+#define _device_BleConnectionState_MIN device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED
+#define _device_BleConnectionState_MAX device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED
+#define _device_BleConnectionState_ARRAYSIZE ((device_BleConnectionState)(device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED+1))
+
+
+
+
+
+
+
+
+
+#define device_BridgeStatus_ble_connection_state_ENUMTYPE device_BleConnectionState
+
+
 /* Initializer values for message structs */
+#define device_DeviceMessage_init_default        {0, {device_DeviceCommand_init_default}}
 #define device_DeviceCommand_init_default        {0, {device_SetMaxTemp_init_default}}
 #define device_SetMaxTemp_init_default           {0}
 #define device_SetMinTemp_init_default           {0}
@@ -70,6 +109,8 @@ extern "C" {
 #define device_SetMinHumidity_init_default       {0}
 #define device_SetCurrentTime_init_default       {0}
 #define device_DeviceTelemetry_init_default      {0, 0, 0}
+#define device_BridgeStatus_init_default         {_device_BleConnectionState_MIN}
+#define device_DeviceMessage_init_zero           {0, {device_DeviceCommand_init_zero}}
 #define device_DeviceCommand_init_zero           {0, {device_SetMaxTemp_init_zero}}
 #define device_SetMaxTemp_init_zero              {0}
 #define device_SetMinTemp_init_zero              {0}
@@ -77,6 +118,7 @@ extern "C" {
 #define device_SetMinHumidity_init_zero          {0}
 #define device_SetCurrentTime_init_zero          {0}
 #define device_DeviceTelemetry_init_zero         {0, 0, 0}
+#define device_BridgeStatus_init_zero            {_device_BleConnectionState_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define device_SetMaxTemp_value_tag              1
@@ -90,8 +132,22 @@ extern "C" {
 #define device_DeviceTelemetry_current_temp_tag  1
 #define device_DeviceTelemetry_min_temp_tag      2
 #define device_DeviceTelemetry_max_temp_tag      3
+#define device_BridgeStatus_ble_connection_state_tag 1
+#define device_DeviceMessage_command_tag         1
+#define device_DeviceMessage_telemetry_tag       2
+#define device_DeviceMessage_bridge_status_tag   3
 
 /* Struct field encoding specification for nanopb */
+#define device_DeviceMessage_FIELDLIST(X, a) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,command,payload.command),   1) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,telemetry,payload.telemetry),   2) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,bridge_status,payload.bridge_status),   3)
+#define device_DeviceMessage_CALLBACK NULL
+#define device_DeviceMessage_DEFAULT NULL
+#define device_DeviceMessage_payload_command_MSGTYPE device_DeviceCommand
+#define device_DeviceMessage_payload_telemetry_MSGTYPE device_DeviceTelemetry
+#define device_DeviceMessage_payload_bridge_status_MSGTYPE device_BridgeStatus
+
 #define device_DeviceCommand_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_max_temp,command.set_max_temp),   1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_min_temp,command.set_min_temp),   2) \
@@ -134,6 +190,12 @@ X(a, STATIC,   SINGULAR, SINT32,   max_temp,          3)
 #define device_DeviceTelemetry_CALLBACK NULL
 #define device_DeviceTelemetry_DEFAULT NULL
 
+#define device_BridgeStatus_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    ble_connection_state,   1)
+#define device_BridgeStatus_CALLBACK NULL
+#define device_BridgeStatus_DEFAULT NULL
+
+extern const pb_msgdesc_t device_DeviceMessage_msg;
 extern const pb_msgdesc_t device_DeviceCommand_msg;
 extern const pb_msgdesc_t device_SetMaxTemp_msg;
 extern const pb_msgdesc_t device_SetMinTemp_msg;
@@ -141,8 +203,10 @@ extern const pb_msgdesc_t device_SetMaxHumidity_msg;
 extern const pb_msgdesc_t device_SetMinHumidity_msg;
 extern const pb_msgdesc_t device_SetCurrentTime_msg;
 extern const pb_msgdesc_t device_DeviceTelemetry_msg;
+extern const pb_msgdesc_t device_BridgeStatus_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
+#define device_DeviceMessage_fields &device_DeviceMessage_msg
 #define device_DeviceCommand_fields &device_DeviceCommand_msg
 #define device_SetMaxTemp_fields &device_SetMaxTemp_msg
 #define device_SetMinTemp_fields &device_SetMinTemp_msg
@@ -150,10 +214,13 @@ extern const pb_msgdesc_t device_DeviceTelemetry_msg;
 #define device_SetMinHumidity_fields &device_SetMinHumidity_msg
 #define device_SetCurrentTime_fields &device_SetCurrentTime_msg
 #define device_DeviceTelemetry_fields &device_DeviceTelemetry_msg
+#define device_BridgeStatus_fields &device_BridgeStatus_msg
 
 /* Maximum encoded size of messages (where known) */
-#define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceTelemetry_size
+#define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceMessage_size
+#define device_BridgeStatus_size                 2
 #define device_DeviceCommand_size                13
+#define device_DeviceMessage_size                20
 #define device_DeviceTelemetry_size              18
 #define device_SetCurrentTime_size               11
 #define device_SetMaxHumidity_size               6

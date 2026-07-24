@@ -2,6 +2,15 @@ syntax = "proto3";
 
 package device;
 
+// Envelope carried by every BLE and framed UART payload.
+message DeviceMessage {
+  oneof payload {
+    DeviceCommand command = 1;
+    DeviceTelemetry telemetry = 2;
+    BridgeStatus bridge_status = 3;
+  }
+}
+
 // A command sent from the phone to the STM32 through the ESP32 BLE/UART
 // bridge. Exactly one command must be set.
 message DeviceCommand {
@@ -46,4 +55,15 @@ message DeviceTelemetry {
   sint32 min_temp = 2;
   // Configured maximum temperature in tenths of a degree Celsius.
   sint32 max_temp = 3;
+}
+
+enum BleConnectionState {
+  BLE_CONNECTION_STATE_DISCONNECTED = 0;
+  BLE_CONNECTION_STATE_CONNECTING = 1;
+  BLE_CONNECTION_STATE_CONNECTED = 2;
+}
+
+// BLE connection state reported by the ESP32 bridge to the STM32.
+message BridgeStatus {
+  BleConnectionState ble_connection_state = 1;
 }

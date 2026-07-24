@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "command_receiver/device_message_decoder.h"
 #include "command_receiver/uart_frame.h"
 #include "usart.h"
 
@@ -35,6 +36,7 @@ typedef struct
 	int16_t min_temp;
 	int16_t max_temp;
 	uint64_t current_time_ms;
+	ble_connection_state_t ble_connection_state;
 	bool min_temp_updated;
 	bool max_temp_updated;
 	bool current_time_updated;

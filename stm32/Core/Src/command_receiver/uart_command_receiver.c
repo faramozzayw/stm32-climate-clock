@@ -2,12 +2,12 @@
 
 #include <stdio.h>
 
-#include "command_receiver/device_command_decoder.h"
+#include "command_receiver/device_message_decoder.h"
 
 static void log_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
 static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
-static void apply_decoded_command(uart_command_receiver_t *commands,
-	const decoded_device_command_t *command);
+static void apply_decoded_message(uart_command_receiver_t *commands,
+	const decoded_device_message_t *message);
 static void print_temperature(const char *command, int16_t temperature);
 
 void uart_command_receiver_init(
@@ -28,6 +28,7 @@ void uart_command_receiver_init(
 	commands->values.min_temp_updated = false;
 	commands->values.max_temp_updated = false;
 	commands->values.current_time_updated = false;
+	commands->values.ble_connection_state = BLE_CONNECTION_STATE_DISCONNECTED;
 
 	commands->stats.rx_byte_count = 0U;
 	commands->stats.rx_rearm_error_count = 0U;
@@ -155,41 +156,61 @@ static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte)
 	}
 	else if (frame_result == UART_FRAME_RESULT_COMPLETE)
 	{
-		decoded_device_command_t decoded_command;
+		decoded_device_message_t decoded_message;
 
-		if (device_command_decode(frame.payload, frame.payload_length,
-				&decoded_command) != DEVICE_COMMAND_DECODE_OK)
+		if (device_message_decode(frame.payload, frame.payload_length,
+				&decoded_message) != DEVICE_MESSAGE_DECODE_OK)
 		{
 			commands->stats.protobuf_decode_error_count++;
 		}
 		else
 		{
-			apply_decoded_command(commands, &decoded_command);
+			apply_decoded_message(commands, &decoded_message);
 		}
 	}
 }
 
-static void apply_decoded_command(uart_command_receiver_t *commands,
-	const decoded_device_command_t *command)
+static void apply_decoded_message(uart_command_receiver_t *commands,
+	const decoded_device_message_t *message)
 {
-	switch (command->type)
+	switch (message->type)
 	{
-	case DEVICE_COMMAND_SET_MAX_TEMP:
-		commands->values.max_temp = command->value.temperature;
+	case DEVICE_MESSAGE_SET_MAX_TEMP:
+		commands->values.max_temp = message->value.temperature;
 		commands->values.max_temp_updated = true;
 		print_temperature("SetMaxTemp", commands->values.max_temp);
 		break;
 
-	case DEVICE_COMMAND_SET_MIN_TEMP:
-		commands->values.min_temp = command->value.temperature;
+	case DEVICE_MESSAGE_SET_MIN_TEMP:
+		commands->values.min_temp = message->value.temperature;
 		commands->values.min_temp_updated = true;
 		print_temperature("SetMinTemp", commands->values.min_temp);
 		break;
 
-	case DEVICE_COMMAND_SET_CURRENT_TIME:
-		commands->values.current_time_ms = command->value.current_time_ms;
+	case DEVICE_MESSAGE_SET_CURRENT_TIME:
+		commands->values.current_time_ms = message->value.current_time_ms;
 		commands->values.current_time_updated = true;
 		printf("[USART1] SetCurrentTime received\r\n");
+		break;
+
+	case DEVICE_MESSAGE_BLE_CONNECTION_STATE:
+		commands->values.ble_connection_state =
+			message->value.ble_connection_state;
+
+		switch (commands->values.ble_connection_state)
+		{
+		case BLE_CONNECTION_STATE_DISCONNECTED:
+			printf("[USART1] BLE disconnected\r\n");
+			break;
+
+		case BLE_CONNECTION_STATE_CONNECTING:
+			printf("[USART1] BLE connecting\r\n");
+			break;
+
+		case BLE_CONNECTION_STATE_CONNECTED:
+			printf("[USART1] BLE connected\r\n");
+			break;
+		}
 		break;
 
 	default:

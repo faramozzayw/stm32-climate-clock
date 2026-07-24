@@ -17,18 +17,19 @@ bool telemetry_send_temperature(
 		return false;
 	}
 
-	device_DeviceTelemetry telemetry = device_DeviceTelemetry_init_zero;
-	uint8_t payload[device_DeviceTelemetry_size];
+	device_DeviceMessage message = device_DeviceMessage_init_zero;
+	uint8_t payload[device_DeviceMessage_size];
 	uint8_t frame[UART_FRAME_MAX_SIZE];
 	pb_ostream_t stream;
 	uint16_t frame_length;
 
-	telemetry.current_temp = current_temperature;
-	telemetry.min_temp = min_temperature;
-	telemetry.max_temp = max_temperature;
+	message.which_payload = device_DeviceMessage_telemetry_tag;
+	message.payload.telemetry.current_temp = current_temperature;
+	message.payload.telemetry.min_temp = min_temperature;
+	message.payload.telemetry.max_temp = max_temperature;
 	stream = pb_ostream_from_buffer(payload, sizeof(payload));
 
-	if (!pb_encode(&stream, device_DeviceTelemetry_fields, &telemetry))
+	if (!pb_encode(&stream, device_DeviceMessage_fields, &message))
 	{
 		return false;
 	}

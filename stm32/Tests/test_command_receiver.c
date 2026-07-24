@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "command_receiver/device_command_decoder.h"
+#include "command_receiver/device_message_decoder.h"
 #include "command_receiver/uart_command_receiver.h"
 #include "command_receiver/uart_frame.h"
 #include "device.pb.h"
@@ -84,18 +84,28 @@ static size_t make_frame(const uint8_t *payload, size_t payload_length,
 	return payload_length + 6U;
 }
 
-static size_t encode_command(const device_DeviceCommand *command,
+static size_t encode_message(const device_DeviceMessage *message,
 	uint8_t *payload)
 {
 	pb_ostream_t stream = pb_ostream_from_buffer(payload,
 		UART_FRAME_MAX_PAYLOAD_SIZE);
 
-	if (!pb_encode(&stream, device_DeviceCommand_fields, command))
+	if (!pb_encode(&stream, device_DeviceMessage_fields, message))
 	{
 		return 0U;
 	}
 
 	return stream.bytes_written;
+}
+
+static size_t encode_command(const device_DeviceCommand *command,
+	uint8_t *payload)
+{
+	device_DeviceMessage message = device_DeviceMessage_init_zero;
+
+	message.which_payload = device_DeviceMessage_command_tag;
+	message.payload.command = *command;
+	return encode_message(&message, payload);
 }
 
 static void receiver_feed(uart_command_receiver_t *receiver,
@@ -233,7 +243,7 @@ static bool test_frame_parser_rejects_null_arguments(void)
 static bool test_decoder_decodes_each_command(void)
 {
 	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
-	decoded_device_command_t decoded;
+	decoded_device_message_t decoded;
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
 	size_t payload_length;
 
@@ -241,50 +251,86 @@ static bool test_decoder_decodes_each_command(void)
 	protobuf.command.set_max_temp.value = 32767;
 	payload_length = encode_command(&protobuf, payload);
 	CHECK(payload_length > 0U);
-	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-		  DEVICE_COMMAND_DECODE_OK);
-	CHECK(decoded.type == DEVICE_COMMAND_SET_MAX_TEMP);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_SET_MAX_TEMP);
 	CHECK(decoded.value.temperature == 32767);
 
 	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_min_temp_tag;
 	protobuf.command.set_min_temp.value = -32768;
 	payload_length = encode_command(&protobuf, payload);
-	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-		  DEVICE_COMMAND_DECODE_OK);
-	CHECK(decoded.type == DEVICE_COMMAND_SET_MIN_TEMP);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_SET_MIN_TEMP);
 	CHECK(decoded.value.temperature == -32768);
 
 	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_current_time_tag;
 	protobuf.command.set_current_time.value_ms = UINT64_C(1721234567890);
 	payload_length = encode_command(&protobuf, payload);
-	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-		  DEVICE_COMMAND_DECODE_OK);
-	CHECK(decoded.type == DEVICE_COMMAND_SET_CURRENT_TIME);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_SET_CURRENT_TIME);
 	CHECK(decoded.value.current_time_ms == UINT64_C(1721234567890));
+	return true;
+}
+
+static bool test_decoder_decodes_ble_connection_state(void)
+{
+	device_DeviceMessage protobuf = device_DeviceMessage_init_zero;
+	decoded_device_message_t decoded;
+	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
+	size_t payload_length;
+
+	protobuf.which_payload = device_DeviceMessage_bridge_status_tag;
+	protobuf.payload.bridge_status.ble_connection_state =
+		device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING;
+	payload_length = encode_message(&protobuf, payload);
+	CHECK(payload_length > 0U);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
+	CHECK(decoded.value.ble_connection_state == BLE_CONNECTION_STATE_CONNECTING);
+
+	protobuf.payload.bridge_status.ble_connection_state =
+		device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED;
+	payload_length = encode_message(&protobuf, payload);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
+	CHECK(decoded.value.ble_connection_state == BLE_CONNECTION_STATE_CONNECTED);
+
+	protobuf.payload.bridge_status.ble_connection_state =
+		device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED;
+	payload_length = encode_message(&protobuf, payload);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_OK);
+	CHECK(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
+	CHECK(decoded.value.ble_connection_state ==
+		  BLE_CONNECTION_STATE_DISCONNECTED);
 	return true;
 }
 
 static bool test_decoder_rejects_out_of_range_temperatures(void)
 {
 	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
-	decoded_device_command_t decoded;
+	decoded_device_message_t decoded;
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
 	size_t payload_length;
 
 	protobuf.which_command = device_DeviceCommand_set_max_temp_tag;
 	protobuf.command.set_max_temp.value = 32768;
 	payload_length = encode_command(&protobuf, payload);
-	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-		  DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE);
 
 	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_min_temp_tag;
 	protobuf.command.set_min_temp.value = -32769;
 	payload_length = encode_command(&protobuf, payload);
-	CHECK(device_command_decode(payload, (uint16_t)payload_length, &decoded) ==
-		  DEVICE_COMMAND_DECODE_VALUE_OUT_OF_RANGE);
+	CHECK(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE);
 	return true;
 }
 
@@ -292,18 +338,18 @@ static bool test_decoder_rejects_invalid_payloads(void)
 {
 	const uint8_t malformed[] = {0xFFU};
 	const uint8_t unknown_field_only[] = {0x20U, 0x01U};
-	decoded_device_command_t decoded;
+	decoded_device_message_t decoded;
 
-	CHECK(device_command_decode(NULL, 1U, &decoded) ==
-		  DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
-	CHECK(device_command_decode(malformed, 0U, &decoded) ==
-		  DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
-	CHECK(device_command_decode(malformed, sizeof(malformed), NULL) ==
-		  DEVICE_COMMAND_DECODE_INVALID_ARGUMENT);
-	CHECK(device_command_decode(malformed, sizeof(malformed), &decoded) ==
-		  DEVICE_COMMAND_DECODE_INVALID_PROTOBUF);
-	CHECK(device_command_decode(unknown_field_only, sizeof(unknown_field_only),
-			  &decoded) == DEVICE_COMMAND_DECODE_MISSING_COMMAND);
+	CHECK(device_message_decode(NULL, 1U, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_INVALID_ARGUMENT);
+	CHECK(device_message_decode(malformed, 0U, &decoded) ==
+		  DEVICE_MESSAGE_DECODE_INVALID_ARGUMENT);
+	CHECK(device_message_decode(malformed, sizeof(malformed), NULL) ==
+		  DEVICE_MESSAGE_DECODE_INVALID_ARGUMENT);
+	CHECK(device_message_decode(malformed, sizeof(malformed), &decoded) ==
+		  DEVICE_MESSAGE_DECODE_INVALID_PROTOBUF);
+	CHECK(device_message_decode(unknown_field_only, sizeof(unknown_field_only),
+			  &decoded) == DEVICE_MESSAGE_DECODE_MISSING_PAYLOAD);
 	return true;
 }
 
@@ -321,6 +367,8 @@ static bool test_receiver_initializes_and_rearms_uart(void)
 	CHECK(!receiver.values.min_temp_updated);
 	CHECK(!receiver.values.max_temp_updated);
 	CHECK(!receiver.values.current_time_updated);
+	CHECK(receiver.values.ble_connection_state ==
+		  BLE_CONNECTION_STATE_DISCONNECTED);
 	CHECK(uart_command_receiver_rx_byte_ptr(&receiver) == &receiver.rx.byte);
 	CHECK(uart_command_receiver_rx_byte_ptr(NULL) == NULL);
 
@@ -407,6 +455,21 @@ static bool test_receiver_applies_framed_commands_end_to_end(void)
 	uart_command_receiver_poll(&receiver);
 	CHECK(receiver.values.current_time_ms == UINT64_C(9876543210));
 	CHECK(receiver.values.current_time_updated);
+
+	{
+		device_DeviceMessage message = device_DeviceMessage_init_zero;
+
+		message.which_payload = device_DeviceMessage_bridge_status_tag;
+		message.payload.bridge_status.ble_connection_state =
+			device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED;
+		payload_length = encode_message(&message, payload);
+		frame_length = make_frame(payload, payload_length, frame);
+		receiver_feed(&receiver, frame, frame_length);
+		uart_command_receiver_poll(&receiver);
+		CHECK(receiver.values.ble_connection_state ==
+			  BLE_CONNECTION_STATE_CONNECTED);
+	}
+
 	CHECK(receiver.stats.frame_error_count == 0U);
 	CHECK(receiver.stats.protobuf_decode_error_count == 0U);
 	CHECK(mock_receive_call_count == receiver.stats.rx_byte_count);
@@ -456,6 +519,7 @@ int main(void)
 		{"frame parser rejects corruption and recovers", test_frame_parser_rejects_bad_lengths_and_crc_then_recovers},
 		{"frame parser validates arguments", test_frame_parser_rejects_null_arguments},
 		{"decoder handles every command", test_decoder_decodes_each_command},
+		{"decoder handles BLE connection state", test_decoder_decodes_ble_connection_state},
 		{"decoder enforces temperature range", test_decoder_rejects_out_of_range_temperatures},
 		{"decoder rejects invalid payloads", test_decoder_rejects_invalid_payloads},
 		{"receiver initializes and rearms UART", test_receiver_initializes_and_rearms_uart},

@@ -73,6 +73,10 @@ void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
@@ -160,6 +164,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
     PA0     ------> TIM2_CH1
     PA1     ------> TIM2_CH2
     PB10     ------> TIM2_CH3
+    PB11     ------> TIM2_CH4
     */
     GPIO_InitStruct.Pin = LED_RED_Pin|LED_GREEN_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -168,12 +173,12 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM2;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = LED_BLUE_Pin;
+    GPIO_InitStruct.Pin = LED_BLUE_Pin|CONNECTION_LED_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM2;
-    HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM2_MspPostInit 1 */
 

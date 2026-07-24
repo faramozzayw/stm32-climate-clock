@@ -63,10 +63,10 @@ void Error_Handler(void);
 #define LED_GREEN_GPIO_Port GPIOA
 #define PUSH_BUTTON_Pin GPIO_PIN_7
 #define PUSH_BUTTON_GPIO_Port GPIOA
-#define CONNECTION_LED_Pin GPIO_PIN_4
-#define CONNECTION_LED_GPIO_Port GPIOC
 #define LED_BLUE_Pin GPIO_PIN_10
 #define LED_BLUE_GPIO_Port GPIOB
+#define CONNECTION_LED_Pin GPIO_PIN_11
+#define CONNECTION_LED_GPIO_Port GPIOB
 #define RST_Pin GPIO_PIN_7
 #define RST_GPIO_Port GPIOB
 

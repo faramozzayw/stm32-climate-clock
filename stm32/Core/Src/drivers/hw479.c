@@ -27,3 +27,8 @@ void hw479_init(hw479_t *hw479)
 
 	hw479_reset(hw479);
 }
+
+TIM_HandleTypeDef *hw479_get_timer(const hw479_t *hw479)
+{
+	return hw479->htim;
+}

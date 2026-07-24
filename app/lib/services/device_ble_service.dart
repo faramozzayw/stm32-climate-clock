@@ -106,7 +106,7 @@ class DeviceBleService {
     }
 
     await characteristic.write(
-      command.writeToBuffer(),
+      DeviceMessage(command: command).writeToBuffer(),
       withoutResponse: characteristic.properties.writeWithoutResponse,
     );
   }
@@ -145,9 +145,12 @@ class DeviceBleService {
 
   void _decodeTelemetry(List<int> value) {
     try {
-      final message = DeviceTelemetry.fromBuffer(value);
+      final message = DeviceMessage.fromBuffer(value);
+      if (!message.hasTelemetry()) {
+        throw const FormatException('Expected DeviceTelemetry payload.');
+      }
       if (!_telemetry.isClosed) {
-        _telemetry.add(message);
+        _telemetry.add(message.telemetry);
       }
     } catch (error, stackTrace) {
       if (!_telemetry.isClosed) {

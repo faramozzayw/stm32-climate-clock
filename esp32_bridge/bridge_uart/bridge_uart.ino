@@ -3,6 +3,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
+#include "device.pb.h"
+#include "pb_encode.h"
 #include "uart_framing.h"
 
 // UART to STM32
@@ -18,6 +20,8 @@ HardwareSerial STM32Serial(2);
 
 BLECharacteristic *txCharacteristic;
 uart_frame_parser_t stm32FrameParser;
+volatile bool bleLinkConnected = false;
+volatile bool bleNotificationsEnabled = false;
 
 static bool writeUartFrame(const uint8_t *payload, size_t length)
 {
@@ -40,6 +44,23 @@ static bool writeUartFrame(const uint8_t *payload, size_t length)
 	}
 
 	return STM32Serial.write(frame, frameLength) == frameLength;
+}
+
+static bool writeBleConnectionStatus(device_BleConnectionState state)
+{
+	device_DeviceMessage message = device_DeviceMessage_init_zero;
+	uint8_t payload[device_DeviceMessage_size];
+	pb_ostream_t stream = pb_ostream_from_buffer(payload, sizeof(payload));
+
+	message.which_payload = device_DeviceMessage_bridge_status_tag;
+	message.payload.bridge_status.ble_connection_state = state;
+
+	if (!pb_encode(&stream, device_DeviceMessage_fields, &message))
+	{
+		return false;
+	}
+
+	return writeUartFrame(payload, stream.bytes_written);
 }
 
 class RxCallbacks : public BLECharacteristicCallbacks
@@ -71,6 +92,60 @@ class RxCallbacks : public BLECharacteristicCallbacks
 	}
 };
 
+class TxDescriptorCallbacks : public BLEDescriptorCallbacks
+{
+	void onWrite(BLEDescriptor *descriptor) override
+	{
+		BLE2902 *configuration = static_cast<BLE2902 *>(descriptor);
+
+		bleNotificationsEnabled = configuration->getNotifications();
+
+		if (!bleLinkConnected)
+		{
+			return;
+		}
+
+		device_BleConnectionState state = bleNotificationsEnabled
+											  ? device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED
+											  : device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING;
+
+		if (!writeBleConnectionStatus(state))
+		{
+			Serial.println("Failed to report BLE notification state");
+		}
+	}
+};
+
+class ServerCallbacks : public BLEServerCallbacks
+{
+	void onConnect(BLEServer *server) override
+	{
+		(void)server;
+		bleLinkConnected = true;
+		bleNotificationsEnabled = false;
+
+		if (!writeBleConnectionStatus(
+				device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING))
+		{
+			Serial.println("Failed to report BLE connection attempt");
+		}
+	}
+
+	void onDisconnect(BLEServer *server) override
+	{
+		bleLinkConnected = false;
+		bleNotificationsEnabled = false;
+
+		if (!writeBleConnectionStatus(
+				device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED))
+		{
+			Serial.println("Failed to report BLE disconnection");
+		}
+
+		server->startAdvertising();
+	}
+};
+
 void setup()
 {
 	Serial.begin(115200);
@@ -83,6 +158,7 @@ void setup()
 	BLEDevice::init("ClimateClock");
 
 	BLEServer *server = BLEDevice::createServer();
+	server->setCallbacks(new ServerCallbacks());
 	BLEService *service = server->createService(SERVICE_UUID);
 
 	// Phone -> ESP32 -> STM32
@@ -98,7 +174,9 @@ void setup()
 		CHARACTERISTIC_TX_UUID,
 		BLECharacteristic::PROPERTY_NOTIFY);
 
-	txCharacteristic->addDescriptor(new BLE2902());
+	BLE2902 *notificationDescriptor = new BLE2902();
+	notificationDescriptor->setCallbacks(new TxDescriptorCallbacks());
+	txCharacteristic->addDescriptor(notificationDescriptor);
 
 	service->start();
 
@@ -106,6 +184,12 @@ void setup()
 	advertising->addServiceUUID(SERVICE_UUID);
 	advertising->setScanResponse(true);
 	BLEDevice::startAdvertising();
+
+	if (!writeBleConnectionStatus(
+			device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED))
+	{
+		Serial.println("Failed to report initial BLE state");
+	}
 
 	Serial.println("BLE bridge is advertising");
 }
@@ -123,8 +207,11 @@ void loop()
 
 		if (result == UART_FRAME_RESULT_COMPLETE)
 		{
-			txCharacteristic->setValue(frame.payload, frame.payload_length);
-			txCharacteristic->notify();
+			if (bleNotificationsEnabled)
+			{
+				txCharacteristic->setValue(frame.payload, frame.payload_length);
+				txCharacteristic->notify();
+			}
 		}
 		else if (result == UART_FRAME_RESULT_ERROR)
 		{

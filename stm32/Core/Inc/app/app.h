@@ -25,6 +25,7 @@ typedef struct
 	int16_t max_temp;
 	temperature_unit_t temperature_unit;
 	bool eeprom_ready;
+	ble_connection_state_t ble_connection_state;
 } app_t;
 
 /**
