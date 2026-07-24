@@ -22,31 +22,6 @@
 		}                                                                      \
 	} while (0)
 
-static HAL_StatusTypeDef mock_receive_result = HAL_OK;
-static uint32_t mock_receive_call_count;
-static UART_HandleTypeDef *mock_receive_huart;
-static uint8_t *mock_receive_data;
-static uint16_t mock_receive_size;
-
-HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart,
-	uint8_t *data, uint16_t size)
-{
-	mock_receive_call_count++;
-	mock_receive_huart = huart;
-	mock_receive_data = data;
-	mock_receive_size = size;
-	return mock_receive_result;
-}
-
-static void reset_uart_mock(void)
-{
-	mock_receive_result = HAL_OK;
-	mock_receive_call_count = 0U;
-	mock_receive_huart = NULL;
-	mock_receive_data = NULL;
-	mock_receive_size = 0U;
-}
-
 static uint16_t crc16_ccitt(const uint8_t *data, size_t length)
 {
 	uint16_t crc = 0xFFFFU;
@@ -115,8 +90,7 @@ static void receiver_feed(uart_command_receiver_t *receiver,
 
 	for (pos = 0U; pos < length; pos++)
 	{
-		*uart_command_receiver_rx_byte_ptr(receiver) = bytes[pos];
-		uart_command_receiver_on_rx_complete(receiver);
+		uart_command_receiver_push_byte(receiver, bytes[pos]);
 	}
 }
 
@@ -373,15 +347,12 @@ static bool test_decoder_rejects_invalid_payloads(void)
 	return true;
 }
 
-static bool test_receiver_initializes_and_rearms_uart(void)
+static bool test_receiver_initializes_and_accepts_bytes(void)
 {
 	uart_command_receiver_t receiver;
-	UART_HandleTypeDef huart = {0};
 
 	memset(&receiver, 0xA5, sizeof(receiver));
-	reset_uart_mock();
-	uart_command_receiver_init(&receiver, &huart);
-	CHECK(receiver.rx.huart == &huart);
+	uart_command_receiver_init(&receiver);
 	CHECK(byte_ring_buffer_is_empty(&receiver.rx.bytes));
 	CHECK(receiver.stats.rx_byte_count == 0U);
 	CHECK(!receiver.values.min_temp_updated);
@@ -391,43 +362,21 @@ static bool test_receiver_initializes_and_rearms_uart(void)
 	CHECK(!receiver.values.temperature_unit_updated);
 	CHECK(receiver.values.ble_connection_state ==
 		  BLE_CONNECTION_STATE_DISCONNECTED);
-	CHECK(uart_command_receiver_rx_byte_ptr(&receiver) == &receiver.rx.byte);
-	CHECK(uart_command_receiver_rx_byte_ptr(NULL) == NULL);
-
-	receiver.rx.byte = 0x55U;
-	uart_command_receiver_on_rx_complete(&receiver);
+	uart_command_receiver_push_byte(&receiver, 0x55U);
 	CHECK(receiver.stats.rx_byte_count == 1U);
-	CHECK(mock_receive_call_count == 1U);
-	CHECK(mock_receive_huart == &huart);
-	CHECK(mock_receive_data == &receiver.rx.byte);
-	CHECK(mock_receive_size == 1U);
+	uart_command_receiver_push_byte(NULL, 0x55U);
 	return true;
 }
 
-static bool test_receiver_tracks_rearm_failures_and_overflow(void)
+static bool test_receiver_tracks_overflow(void)
 {
 	uart_command_receiver_t receiver;
-	UART_HandleTypeDef huart = {0};
 	size_t pos;
 
-	reset_uart_mock();
-	mock_receive_result = HAL_ERROR;
-	uart_command_receiver_init(&receiver, &huart);
-	receiver.rx.byte = 0x11U;
-	uart_command_receiver_on_rx_complete(&receiver);
-	CHECK(receiver.stats.rx_rearm_error_count == 1U);
-
-	reset_uart_mock();
-	uart_command_receiver_init(&receiver, NULL);
-	uart_command_receiver_on_rx_complete(&receiver);
-	CHECK(receiver.stats.rx_rearm_error_count == 1U);
-	CHECK(mock_receive_call_count == 0U);
-
-	uart_command_receiver_init(&receiver, &huart);
+	uart_command_receiver_init(&receiver);
 	for (pos = 0U; pos < UART_COMMAND_RECEIVER_RX_CAPACITY; pos++)
 	{
-		receiver.rx.byte = 0x00U;
-		uart_command_receiver_on_rx_complete(&receiver);
+		uart_command_receiver_push_byte(&receiver, 0x00U);
 	}
 	CHECK(receiver.stats.rx_byte_count == UART_COMMAND_RECEIVER_RX_CAPACITY);
 	CHECK(receiver.stats.rx_overflow_count == 1U);
@@ -440,14 +389,12 @@ static bool test_receiver_applies_framed_commands_end_to_end(void)
 {
 	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
 	uart_command_receiver_t receiver;
-	UART_HandleTypeDef huart = {0};
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
 	uint8_t frame[TEST_FRAME_MAX_SIZE];
 	size_t payload_length;
 	size_t frame_length;
 
-	reset_uart_mock();
-	uart_command_receiver_init(&receiver, &huart);
+	uart_command_receiver_init(&receiver);
 
 	protobuf.which_command = device_DeviceCommand_set_max_temp_tag;
 	protobuf.command.set_max_temp.value = 255;
@@ -506,7 +453,6 @@ static bool test_receiver_applies_framed_commands_end_to_end(void)
 
 	CHECK(receiver.stats.frame_error_count == 0U);
 	CHECK(receiver.stats.protobuf_decode_error_count == 0U);
-	CHECK(mock_receive_call_count == receiver.stats.rx_byte_count);
 	return true;
 }
 
@@ -514,12 +460,10 @@ static bool test_receiver_counts_frame_and_protobuf_errors(void)
 {
 	const uint8_t invalid_protobuf[] = {0xFFU};
 	uart_command_receiver_t receiver;
-	UART_HandleTypeDef huart = {0};
 	uint8_t frame[TEST_FRAME_MAX_SIZE];
 	size_t frame_length;
 
-	reset_uart_mock();
-	uart_command_receiver_init(&receiver, &huart);
+	uart_command_receiver_init(&receiver);
 	frame_length = make_frame(invalid_protobuf, sizeof(invalid_protobuf), frame);
 	frame[frame_length - 1U] ^= 0x01U;
 	receiver_feed(&receiver, frame, frame_length);
@@ -556,8 +500,8 @@ int main(void)
 		{"decoder handles BLE connection state", test_decoder_decodes_ble_connection_state},
 		{"decoder enforces temperature range", test_decoder_rejects_out_of_range_temperatures},
 		{"decoder rejects invalid payloads", test_decoder_rejects_invalid_payloads},
-		{"receiver initializes and rearms UART", test_receiver_initializes_and_rearms_uart},
-		{"receiver tracks UART failures and overflow", test_receiver_tracks_rearm_failures_and_overflow},
+		{"receiver initializes and accepts bytes", test_receiver_initializes_and_accepts_bytes},
+		{"receiver tracks overflow", test_receiver_tracks_overflow},
 		{"receiver applies framed commands", test_receiver_applies_framed_commands_end_to_end},
 		{"receiver counts frame and protobuf errors", test_receiver_counts_frame_and_protobuf_errors},
 	};

@@ -9,17 +9,13 @@ static void apply_decoded_message(uart_command_receiver_t *commands,
 	const decoded_device_message_t *message);
 static void print_temperature(const char *command, int16_t temperature);
 
-void uart_command_receiver_init(
-	uart_command_receiver_t *commands,
-	UART_HandleTypeDef *huart)
+void uart_command_receiver_init(uart_command_receiver_t *commands)
 {
 	if (commands == NULL)
 	{
 		return;
 	}
 
-	commands->rx.huart = huart;
-	commands->rx.byte = 0U;
 	byte_ring_buffer_init(
 		&commands->rx.bytes,
 		commands->rx.storage,
@@ -34,27 +30,17 @@ void uart_command_receiver_init(
 	commands->values.ble_connection_state = BLE_CONNECTION_STATE_DISCONNECTED;
 
 	commands->stats.rx_byte_count = 0U;
-	commands->stats.rx_rearm_error_count = 0U;
 	commands->stats.rx_overflow_count = 0U;
 	commands->stats.frame_error_count = 0U;
 	commands->stats.protobuf_decode_error_count = 0U;
-	commands->stats.last_reported_rx_rearm_error_count = 0U;
 	commands->stats.last_reported_rx_overflow_count = 0U;
 	commands->stats.last_reported_frame_error_count = 0U;
 	commands->stats.last_reported_protobuf_decode_error_count = 0U;
 }
 
-uint8_t *uart_command_receiver_rx_byte_ptr(uart_command_receiver_t *commands)
-{
-	if (commands == NULL)
-	{
-		return NULL;
-	}
-
-	return &commands->rx.byte;
-}
-
-void uart_command_receiver_on_rx_complete(uart_command_receiver_t *commands)
+void uart_command_receiver_push_byte(
+	uart_command_receiver_t *commands,
+	uint8_t byte)
 {
 	if (commands == NULL)
 	{
@@ -62,15 +48,9 @@ void uart_command_receiver_on_rx_complete(uart_command_receiver_t *commands)
 	}
 
 	commands->stats.rx_byte_count++;
-	if (!byte_ring_buffer_push(&commands->rx.bytes, commands->rx.byte))
+	if (!byte_ring_buffer_push(&commands->rx.bytes, byte))
 	{
 		commands->stats.rx_overflow_count++;
-	}
-
-	if (commands->rx.huart == NULL ||
-		HAL_UART_Receive_IT(commands->rx.huart, &commands->rx.byte, 1U) != HAL_OK)
-	{
-		commands->stats.rx_rearm_error_count++;
 	}
 }
 
@@ -91,15 +71,6 @@ void uart_command_receiver_poll(uart_command_receiver_t *commands)
 		}
 
 		process_rx_byte(commands, byte);
-	}
-
-	if (commands->stats.last_reported_rx_rearm_error_count !=
-		commands->stats.rx_rearm_error_count)
-	{
-		commands->stats.last_reported_rx_rearm_error_count =
-			commands->stats.rx_rearm_error_count;
-		printf("[USART1] RX errors: %lu\r\n",
-			(unsigned long)commands->stats.rx_rearm_error_count);
 	}
 
 	if (commands->stats.last_reported_rx_overflow_count !=

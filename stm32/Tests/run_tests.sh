@@ -8,6 +8,7 @@ build_dir=".build"
 command_receiver_executable="${build_dir}/command_receiver_tests"
 pure_utils_executable="${build_dir}/pure_utils_tests"
 telemetry_executable="${build_dir}/telemetry_tests"
+hal_uart_receiver_executable="${build_dir}/hal_uart_receiver_tests"
 compiler="${CC:-gcc}"
 
 if ! command -v "${compiler}" >/dev/null 2>&1; then
@@ -22,7 +23,6 @@ mkdir -p "${build_dir}"
     -Wall \
     -Wextra \
     -Werror \
-    -Ifakes \
     -I../Core/Inc \
     -I../Protocol \
     -I../../third_party/nanopb \
@@ -68,6 +68,18 @@ mkdir -p "${build_dir}"
     ../../third_party/nanopb/pb_encode.c \
     -o "${telemetry_executable}"
 
+"${compiler}" \
+    -std=c11 \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -Ifakes \
+    -I../Core/Inc \
+    test_hal_uart_receiver.c \
+    ../Core/Src/platform/hal_uart_receiver.c \
+    -o "${hal_uart_receiver_executable}"
+
 "${command_receiver_executable}"
 "${pure_utils_executable}"
 "${telemetry_executable}"
+"${hal_uart_receiver_executable}"

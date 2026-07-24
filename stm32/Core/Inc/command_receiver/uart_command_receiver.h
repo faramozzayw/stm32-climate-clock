@@ -6,14 +6,11 @@
 #include "byte_ring_buffer.h"
 #include "command_receiver/device_message_decoder.h"
 #include "command_receiver/uart_frame.h"
-#include "usart.h"
 
 #define UART_COMMAND_RECEIVER_RX_CAPACITY 128U
 
 typedef struct
 {
-	UART_HandleTypeDef *huart;
-	uint8_t byte;
 	uint8_t storage[UART_COMMAND_RECEIVER_RX_CAPACITY];
 	byte_ring_buffer_t bytes;
 } uart_command_receiver_rx_t;
@@ -21,11 +18,9 @@ typedef struct
 typedef struct
 {
 	uint32_t rx_byte_count;
-	uint32_t rx_rearm_error_count;
 	uint32_t rx_overflow_count;
 	uint32_t frame_error_count;
 	uint32_t protobuf_decode_error_count;
-	uint32_t last_reported_rx_rearm_error_count;
 	uint32_t last_reported_rx_overflow_count;
 	uint32_t last_reported_frame_error_count;
 	uint32_t last_reported_protobuf_decode_error_count;
@@ -52,9 +47,10 @@ typedef struct
 	uart_command_receiver_values_t values;
 } uart_command_receiver_t;
 
-void uart_command_receiver_init(uart_command_receiver_t *receiver, UART_HandleTypeDef *huart);
-void uart_command_receiver_on_rx_complete(uart_command_receiver_t *receiver);
+void uart_command_receiver_init(uart_command_receiver_t *receiver);
+void uart_command_receiver_push_byte(
+	uart_command_receiver_t *receiver,
+	uint8_t byte);
 void uart_command_receiver_poll(uart_command_receiver_t *receiver);
-uint8_t *uart_command_receiver_rx_byte_ptr(uart_command_receiver_t *receiver);
 
 #endif /* INC_UART_COMMAND_RECEIVER_H_ */

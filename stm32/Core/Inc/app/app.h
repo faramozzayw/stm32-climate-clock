@@ -21,7 +21,6 @@ typedef struct
 	ds3231_t *rtc;
 	at24c256_t *eeprom;
 	uart_command_receiver_t *command_receiver;
-	UART_HandleTypeDef *command_uart;
 	hal_uart_transport_t *telemetry_transport;
 	int16_t min_temp;
 	int16_t max_temp;
@@ -40,7 +39,6 @@ typedef struct
  * @param eeprom EEPROM state to initialize.
  * @param eeprom_i2c I2C peripheral used by the EEPROM.
  * @param command_receiver UART command receiver state.
- * @param command_uart UART peripheral used to receive commands.
  * @param telemetry_transport UART transport used to send telemetry.
  * @return true when required application components initialized successfully.
  *         EEPROM availability is optional and is tracked in the application.
@@ -52,7 +50,6 @@ bool app_init(app_t *app,
 	at24c256_t *eeprom,
 	I2C_HandleTypeDef *eeprom_i2c,
 	uart_command_receiver_t *command_receiver,
-	UART_HandleTypeDef *command_uart,
 	hal_uart_transport_t *telemetry_transport);
 
 /**
@@ -78,16 +75,5 @@ void app_update(app_t *app);
  * @param unit Celsius or Fahrenheit display unit.
  */
 void app_set_temperature_unit(app_t *app, temperature_unit_t unit);
-
-/**
- * @brief Forward a completed UART receive interrupt to the application.
- *
- * Interrupts from UART peripherals other than the configured command UART are
- * ignored.
- *
- * @param app Initialized application state.
- * @param uart UART that completed a receive operation.
- */
-void app_on_uart_rx_complete(app_t *app, UART_HandleTypeDef *uart);
 
 #endif /* INC_APP_APP_H_ */

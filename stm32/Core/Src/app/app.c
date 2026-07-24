@@ -153,7 +153,6 @@ bool app_init(
 	at24c256_t *eeprom,
 	I2C_HandleTypeDef *eeprom_i2c,
 	uart_command_receiver_t *command_receiver,
-	UART_HandleTypeDef *command_uart,
 	hal_uart_transport_t *telemetry_transport)
 {
 	AT24C256_Status eeprom_status;
@@ -163,7 +162,6 @@ bool app_init(
 	app->rtc = rtc;
 	app->eeprom = eeprom;
 	app->command_receiver = command_receiver;
-	app->command_uart = command_uart;
 	app->telemetry_transport = telemetry_transport;
 	app->min_temp = DEFAULT_MIN_TEMP;
 	app->max_temp = DEFAULT_MAX_TEMP;
@@ -216,18 +214,7 @@ bool app_init(
 
 	app->command_receiver->values.min_temp = app->min_temp;
 	app->command_receiver->values.max_temp = app->max_temp;
-	uart_command_receiver_init(app->command_receiver, app->command_uart);
-
-	if (HAL_UART_Receive_IT(
-			app->command_uart,
-			uart_command_receiver_rx_byte_ptr(app->command_receiver),
-			1U) != HAL_OK)
-	{
-		printf("Command UART RX IT start failed\r\n");
-		return false;
-	}
-
-	printf("Command UART RX IT started\r\n");
+	uart_command_receiver_init(app->command_receiver);
 	return true;
 }
 
@@ -287,15 +274,4 @@ void app_set_temperature_unit(app_t *app, temperature_unit_t unit)
 	}
 
 	app->temperature_unit = unit;
-}
-
-void app_on_uart_rx_complete(app_t *app, UART_HandleTypeDef *uart)
-{
-	if ((app == NULL) || (uart != app->command_uart) ||
-		(app->command_receiver == NULL))
-	{
-		return;
-	}
-
-	uart_command_receiver_on_rx_complete(app->command_receiver);
 }
