@@ -4,10 +4,10 @@
 #include <string.h>
 
 #include "unity.h"
-#include "byte_codec.h"
-#include "byte_ring_buffer.h"
-#include "calendar_time.h"
-#include "temperature.h"
+#include "utils/byte_codec.h"
+#include "utils/byte_ring_buffer.h"
+#include "utils/calendar_time.h"
+#include "utils/temperature.h"
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 

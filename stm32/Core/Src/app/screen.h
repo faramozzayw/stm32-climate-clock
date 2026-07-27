@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#include "calendar_time.h"
+#include "utils/calendar_time.h"
 #include "drivers/lcd1602.h"
-#include "temperature.h"
+#include "utils/temperature.h"
 
 /**
  * @brief Initialize the LCD and show the startup message.

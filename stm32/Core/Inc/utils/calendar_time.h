@@ -1,5 +1,5 @@
-#ifndef INC_CALENDAR_TIME_H_
-#define INC_CALENDAR_TIME_H_
+#ifndef INC_UTILS_CALENDAR_TIME_H_
+#define INC_UTILS_CALENDAR_TIME_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,4 +27,4 @@ typedef struct
  */
 bool calendar_time_from_unix_ms(uint64_t epoch_ms, calendar_time_t *time);
 
-#endif /* INC_CALENDAR_TIME_H_ */
+#endif /* INC_UTILS_CALENDAR_TIME_H_ */

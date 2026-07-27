@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-#include "calendar_time.h"
+#include "utils/calendar_time.h"
 #include "i2c.h"
 
 typedef struct

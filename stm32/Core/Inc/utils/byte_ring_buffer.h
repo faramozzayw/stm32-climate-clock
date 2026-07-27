@@ -1,5 +1,5 @@
-#ifndef INC_BYTE_RING_BUFFER_H_
-#define INC_BYTE_RING_BUFFER_H_
+#ifndef INC_UTILS_BYTE_RING_BUFFER_H_
+#define INC_UTILS_BYTE_RING_BUFFER_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,4 +28,4 @@ bool byte_ring_buffer_push(byte_ring_buffer_t *buffer, uint8_t byte);
 bool byte_ring_buffer_pop(byte_ring_buffer_t *buffer, uint8_t *byte);
 bool byte_ring_buffer_is_empty(const byte_ring_buffer_t *buffer);
 
-#endif /* INC_BYTE_RING_BUFFER_H_ */
+#endif /* INC_UTILS_BYTE_RING_BUFFER_H_ */

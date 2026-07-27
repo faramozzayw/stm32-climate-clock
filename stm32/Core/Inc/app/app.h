@@ -10,7 +10,7 @@
 #include "drivers/hw479.h"
 #include "drivers/lcd1602.h"
 #include "platform/hal_uart_transport.h"
-#include "temperature.h"
+#include "utils/temperature.h"
 
 #define APP_UPDATE_INTERVAL_MS 750U
 

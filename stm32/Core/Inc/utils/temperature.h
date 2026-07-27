@@ -1,5 +1,5 @@
-#ifndef INC_TEMPERATURE_H_
-#define INC_TEMPERATURE_H_
+#ifndef INC_UTILS_TEMPERATURE_H_
+#define INC_UTILS_TEMPERATURE_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -36,4 +36,4 @@ bool fixed_temperature_to_string(
 	int16_t temperature_tenths,
 	char unit);
 
-#endif /* INC_TEMPERATURE_H_ */
+#endif /* INC_UTILS_TEMPERATURE_H_ */

@@ -1,4 +1,4 @@
-#include "byte_codec.h"
+#include "utils/byte_codec.h"
 
 void write_int16_le(uint8_t *destination, int16_t value)
 {

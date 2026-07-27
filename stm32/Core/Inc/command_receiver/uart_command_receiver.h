@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "byte_ring_buffer.h"
+#include "utils/byte_ring_buffer.h"
 #include "command_receiver/device_message_decoder.h"
 #include "command_receiver/uart_frame.h"
 

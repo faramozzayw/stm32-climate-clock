@@ -53,7 +53,7 @@ endfunction()
 
 add_climateclock_test(command_receiver_tests
 	test_command_receiver.c
-	"${STM32}/Core/Src/byte_ring_buffer.c"
+	"${STM32}/Core/Src/utils/byte_ring_buffer.c"
 	"${STM32}/Core/Src/command_receiver/device_message_decoder.c"
 	"${STM32}/Core/Src/command_receiver/uart_command_receiver.c")
 target_link_libraries(command_receiver_tests PRIVATE
@@ -61,10 +61,10 @@ target_link_libraries(command_receiver_tests PRIVATE
 
 add_climateclock_test(pure_utils_tests
 	test_pure_utils.c
-	"${STM32}/Core/Src/temperature.c"
-	"${STM32}/Core/Src/byte_codec.c"
-	"${STM32}/Core/Src/byte_ring_buffer.c"
-	"${STM32}/Core/Src/calendar_time.c")
+	"${STM32}/Core/Src/utils/temperature.c"
+	"${STM32}/Core/Src/utils/byte_codec.c"
+	"${STM32}/Core/Src/utils/byte_ring_buffer.c"
+	"${STM32}/Core/Src/utils/calendar_time.c")
 target_link_libraries(pure_utils_tests PRIVATE ${MATH_LIBRARY})
 
 add_climateclock_test(telemetry_tests
@@ -81,7 +81,7 @@ target_include_directories(hal_uart_receiver_tests BEFORE PRIVATE fakes)
 add_climateclock_test(screen_tests
 	test_screen.c
 	"${STM32}/Core/Src/app/screen.c"
-	"${STM32}/Core/Src/temperature.c")
+	"${STM32}/Core/Src/utils/temperature.c")
 target_include_directories(screen_tests BEFORE PRIVATE
 	fakes "${STM32}/Core/Src")
 
