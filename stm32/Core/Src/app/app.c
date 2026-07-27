@@ -5,7 +5,7 @@
 #include "screen.h"
 #include "telemetry.h"
 #include "temperature_indicator.h"
-#include "temperature_settings.h"
+#include "app_settings.h"
 #include "utils/calendar_time.h"
 
 #define DEFAULT_MIN_TEMP 100
@@ -102,7 +102,9 @@ static void apply_received_messages(app_t *app)
 		values->min_temp_updated = false;
 
 		if (app->eeprom_ready &&
-			save_min_temperature(app->eeprom, app->min_temp) != AT24C256_OK)
+			app_settings_save_min_temperature(
+				app->eeprom,
+				app->min_temp) != AT24C256_OK)
 		{
 			printf("Failed to save minimum temperature\r\n");
 		}
@@ -114,7 +116,9 @@ static void apply_received_messages(app_t *app)
 		values->max_temp_updated = false;
 
 		if (app->eeprom_ready &&
-			save_max_temperature(app->eeprom, app->max_temp) != AT24C256_OK)
+			app_settings_save_max_temperature(
+				app->eeprom,
+				app->max_temp) != AT24C256_OK)
 		{
 			printf("Failed to save maximum temperature\r\n");
 		}
@@ -212,20 +216,25 @@ bool app_init(
 	{
 		app->eeprom_ready = true;
 
-		if (load_temperature_settings(
+		if (app_settings_load(
 				app->eeprom,
 				&app->min_temp,
-				&app->max_temp))
+				&app->max_temp,
+				&app->temperature_unit))
 		{
-			printf("Loaded temperature settings: min=%d, max=%d\r\n",
+			printf("Loaded temperature settings: min=%d, max=%d, unit=%c\r\n",
 				(int)app->min_temp,
-				(int)app->max_temp);
+				(int)app->max_temp,
+				app->temperature_unit == TEMPERATURE_UNIT_FAHRENHEIT
+					? TEMPERATURE_UNIT_FAHRENHEIT_SYMBOL
+					: TEMPERATURE_UNIT_CELSIUS_SYMBOL);
 		}
 		else
 		{
-			printf("No valid temperature settings; using defaults: min=%d, max=%d\r\n",
+			printf("No valid temperature settings; using defaults: min=%d, max=%d, unit=%c\r\n",
 				(int)app->min_temp,
-				(int)app->max_temp);
+				(int)app->max_temp,
+				TEMPERATURE_UNIT_CELSIUS_SYMBOL);
 		}
 	}
 	else
@@ -233,9 +242,13 @@ bool app_init(
 		printf("AT24C256 unavailable; using default temperature settings\r\n");
 	}
 
+	uart_command_receiver_init(app->command_receiver);
 	app->command_receiver->values.min_temp = app->min_temp;
 	app->command_receiver->values.max_temp = app->max_temp;
-	uart_command_receiver_init(app->command_receiver);
+	app->command_receiver->values.temperature_unit =
+		app->temperature_unit == TEMPERATURE_UNIT_FAHRENHEIT
+			? DEVICE_TEMPERATURE_UNIT_FAHRENHEIT
+			: DEVICE_TEMPERATURE_UNIT_CELSIUS;
 	return true;
 }
 
@@ -276,5 +289,18 @@ void app_update(app_t *app)
 
 void app_set_temperature_unit(app_t *app, temperature_unit_t unit)
 {
+	if (app->temperature_unit == unit)
+	{
+		return;
+	}
+
 	app->temperature_unit = unit;
+
+	if (app->eeprom_ready &&
+		app_settings_save_temperature_unit(
+			app->eeprom,
+			unit) != AT24C256_OK)
+	{
+		printf("Failed to save temperature unit\r\n");
+	}
 }

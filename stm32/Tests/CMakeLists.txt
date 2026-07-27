@@ -73,6 +73,12 @@ add_climateclock_test(telemetry_tests
 target_link_libraries(telemetry_tests PRIVATE
 	device_protocol uart_framing)
 
+add_climateclock_test(app_settings_tests
+	test_app_settings.c
+	"${STM32}/Core/Src/app_settings.c"
+	"${STM32}/Core/Src/utils/byte_codec.c")
+target_include_directories(app_settings_tests BEFORE PRIVATE fakes)
+
 add_climateclock_test(hal_uart_receiver_tests
 	test_hal_uart_receiver.c
 	"${STM32}/Core/Src/platform/hal_uart_receiver.c")
