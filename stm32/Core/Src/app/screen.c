@@ -4,11 +4,6 @@
 
 void screen_init(lcd1602_t *lcd)
 {
-	if (lcd == NULL)
-	{
-		return;
-	}
-
 	lcd_1602_init(lcd);
 	lcd_1602_backlight_on(lcd);
 	lcd_1602_print(lcd, "Initializing");
@@ -23,11 +18,6 @@ void screen_update(
 	char temperature_text[16];
 	int16_t display_temperature = temperature_celsius;
 	char temperature_unit = TEMPERATURE_UNIT_CELSIUS_SYMBOL;
-
-	if ((lcd == NULL) || (time == NULL))
-	{
-		return;
-	}
 
 	if (unit == TEMPERATURE_UNIT_FAHRENHEIT)
 	{

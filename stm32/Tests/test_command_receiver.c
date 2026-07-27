@@ -205,7 +205,6 @@ static bool test_frame_parser_rejects_null_arguments(void)
 	uart_frame_parser_t parser;
 	uart_frame_view_t view;
 
-	uart_frame_parser_init(NULL);
 	uart_frame_parser_init(&parser);
 	CHECK(uart_frame_parser_process(NULL, 0U, &view) ==
 		  UART_FRAME_RESULT_ERROR);
@@ -364,7 +363,6 @@ static bool test_receiver_initializes_and_accepts_bytes(void)
 		  BLE_CONNECTION_STATE_DISCONNECTED);
 	uart_command_receiver_push_byte(&receiver, 0x55U);
 	CHECK(receiver.stats.rx_byte_count == 1U);
-	uart_command_receiver_push_byte(NULL, 0x55U);
 	return true;
 }
 

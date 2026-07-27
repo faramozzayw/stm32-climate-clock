@@ -157,6 +157,13 @@ bool app_init(
 {
 	AT24C256_Status eeprom_status;
 
+	if ((app == NULL) || (lcd == NULL) || (hw479 == NULL) ||
+		(rtc == NULL) || (eeprom == NULL) || (eeprom_i2c == NULL) ||
+		(command_receiver == NULL) || (telemetry_transport == NULL))
+	{
+		return false;
+	}
+
 	app->lcd = lcd;
 	app->hw479 = hw479;
 	app->rtc = rtc;
@@ -220,11 +227,6 @@ bool app_init(
 
 void app_poll(app_t *app)
 {
-	if ((app == NULL) || (app->command_receiver == NULL))
-	{
-		return;
-	}
-
 	uart_command_receiver_poll(app->command_receiver);
 	apply_received_messages(app);
 	update_connection_led(app);
@@ -236,12 +238,6 @@ void app_update(app_t *app)
 	int16_t temperature;
 	uint8_t telemetry_frame[TELEMETRY_FRAME_MAX_SIZE];
 	uint16_t telemetry_frame_length;
-
-	if ((app == NULL) || (app->lcd == NULL) ||
-		(app->hw479 == NULL) || (app->rtc == NULL))
-	{
-		return;
-	}
 
 	time = ds3231_get_time(app->rtc);
 	ds3231_force_temp_conv(app->rtc);
@@ -266,12 +262,5 @@ void app_update(app_t *app)
 
 void app_set_temperature_unit(app_t *app, temperature_unit_t unit)
 {
-	if ((app == NULL) ||
-		((unit != TEMPERATURE_UNIT_CELSIUS) &&
-			(unit != TEMPERATURE_UNIT_FAHRENHEIT)))
-	{
-		return;
-	}
-
 	app->temperature_unit = unit;
 }

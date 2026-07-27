@@ -11,11 +11,6 @@ static void print_temperature(const char *command, int16_t temperature);
 
 void uart_command_receiver_init(uart_command_receiver_t *commands)
 {
-	if (commands == NULL)
-	{
-		return;
-	}
-
 	byte_ring_buffer_init(
 		&commands->rx.bytes,
 		commands->rx.storage,
@@ -42,11 +37,6 @@ void uart_command_receiver_push_byte(
 	uart_command_receiver_t *commands,
 	uint8_t byte)
 {
-	if (commands == NULL)
-	{
-		return;
-	}
-
 	commands->stats.rx_byte_count++;
 	if (!byte_ring_buffer_push(&commands->rx.bytes, byte))
 	{
@@ -56,11 +46,6 @@ void uart_command_receiver_push_byte(
 
 void uart_command_receiver_poll(uart_command_receiver_t *commands)
 {
-	if (commands == NULL)
-	{
-		return;
-	}
-
 	while (true)
 	{
 		uint8_t byte;

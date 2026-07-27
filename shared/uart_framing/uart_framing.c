@@ -56,11 +56,6 @@ bool uart_frame_encode(
 
 void uart_frame_parser_init(uart_frame_parser_t *parser)
 {
-	if (parser == NULL)
-	{
-		return;
-	}
-
 	parser->state = UART_FRAME_WAIT_MAGIC_1;
 	parser->payload_length = 0U;
 	parser->payload_pos = 0U;

@@ -5,12 +5,6 @@
 
 static bool hal_uart_receiver_rearm(hal_uart_receiver_t *adapter)
 {
-	if ((adapter == NULL) || (adapter->uart == NULL) ||
-		(adapter->receiver == NULL))
-	{
-		return false;
-	}
-
 	if (HAL_UART_Receive_IT(
 			adapter->uart,
 			&adapter->pending_byte,
@@ -50,8 +44,7 @@ void hal_uart_receiver_on_complete(
 	hal_uart_receiver_t *adapter,
 	UART_HandleTypeDef *completed_uart)
 {
-	if ((adapter == NULL) || (completed_uart != adapter->uart) ||
-		(adapter->receiver == NULL))
+	if (completed_uart != adapter->uart)
 	{
 		return;
 	}
@@ -64,9 +57,8 @@ void hal_uart_receiver_on_complete(
 
 void hal_uart_receiver_report_errors(hal_uart_receiver_t *adapter)
 {
-	if ((adapter == NULL) ||
-		(adapter->last_reported_rearm_error_count ==
-			adapter->rearm_error_count))
+	if (adapter->last_reported_rearm_error_count ==
+		adapter->rearm_error_count)
 	{
 		return;
 	}
