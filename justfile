@@ -22,3 +22,9 @@ android-setup:
 [group("android")]
 apk:
     cd app && flutter build apk --release
+
+[group("test")]
+ctest:
+    cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja -DCMAKE_C_COMPILER="${CC:-gcc}"
+    cmake --build stm32/Tests/.build/cmake
+    ctest --test-dir stm32/Tests/.build/cmake --output-on-failure

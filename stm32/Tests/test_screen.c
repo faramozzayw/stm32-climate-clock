@@ -3,19 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "unity.h"
 #include "app/screen.h"
-
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
-
-#define CHECK(condition)                                                       \
-	do                                                                         \
-	{                                                                          \
-		if (!(condition))                                                      \
-		{                                                                      \
-			printf("    CHECK failed at line %d: %s\n", __LINE__, #condition); \
-			return false;                                                      \
-		}                                                                      \
-	} while (0)
 
 static uint32_t init_call_count;
 static uint32_t backlight_call_count;
@@ -73,25 +62,24 @@ static calendar_time_t sample_time(void)
 	return time;
 }
 
-static bool test_screen_initializes_and_writes_fixed_width_rows(void)
+static void test_screen_initializes_and_writes_fixed_width_rows(void)
 {
 	lcd1602_t lcd;
 	calendar_time_t time = sample_time();
 
 	reset_mocks();
 	screen_init(&lcd);
-	CHECK(init_call_count == 1U);
-	CHECK(backlight_call_count == 1U);
-	CHECK(print_call_count == 1U);
+	TEST_ASSERT_TRUE(init_call_count == 1U);
+	TEST_ASSERT_TRUE(backlight_call_count == 1U);
+	TEST_ASSERT_TRUE(print_call_count == 1U);
 
 	screen_update(&lcd, &time, 253, TEMPERATURE_UNIT_CELSIUS);
-	CHECK(write_row_call_count == 2U);
-	CHECK(strcmp(requested_rows[0], "12:34 27/07/2026") == 0);
-	CHECK(strcmp(requested_rows[1], "25.3 C") == 0);
-	return true;
+	TEST_ASSERT_TRUE(write_row_call_count == 2U);
+	TEST_ASSERT_TRUE(strcmp(requested_rows[0], "12:34 27/07/2026") == 0);
+	TEST_ASSERT_TRUE(strcmp(requested_rows[1], "25.3 C") == 0);
 }
 
-static bool test_screen_formats_fahrenheit(void)
+static void test_screen_formats_fahrenheit(void)
 {
 	lcd1602_t lcd;
 	calendar_time_t time = sample_time();
@@ -99,41 +87,21 @@ static bool test_screen_formats_fahrenheit(void)
 	reset_mocks();
 	screen_init(&lcd);
 	screen_update(&lcd, &time, 100, TEMPERATURE_UNIT_FAHRENHEIT);
-	CHECK(strcmp(requested_rows[1], "50.0 F") == 0);
-	return true;
+	TEST_ASSERT_TRUE(strcmp(requested_rows[1], "50.0 F") == 0);
 }
 
-typedef bool (*test_function_t)(void);
-
-typedef struct
+void setUp(void)
 {
-	const char *name;
-	test_function_t function;
-} test_case_t;
+}
+
+void tearDown(void)
+{
+}
 
 int main(void)
 {
-	const test_case_t tests[] = {
-		{"screen formats rows", test_screen_initializes_and_writes_fixed_width_rows},
-		{"screen formats Fahrenheit", test_screen_formats_fahrenheit},
-	};
-	size_t pos;
-	size_t passed = 0U;
-
-	for (pos = 0U; pos < ARRAY_SIZE(tests); pos++)
-	{
-		printf("[ RUN      ] %s\n", tests[pos].name);
-		if (tests[pos].function())
-		{
-			printf("[       OK ] %s\n", tests[pos].name);
-			passed++;
-		}
-		else
-		{
-			printf("[  FAILED  ] %s\n", tests[pos].name);
-		}
-	}
-
-	printf("\n%zu/%zu tests passed\n", passed, ARRAY_SIZE(tests));
-	return passed == ARRAY_SIZE(tests) ? 0 : 1;
+	UNITY_BEGIN();
+	RUN_TEST(test_screen_initializes_and_writes_fixed_width_rows);
+	RUN_TEST(test_screen_formats_fahrenheit);
+	return UNITY_END();
 }

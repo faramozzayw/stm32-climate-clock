@@ -40,7 +40,9 @@ to update its UI and temperature alerts.
   buffer
 - USART1 for framed ESP32 communication and USART2 for serial debug logs
 - PWM outputs for the RGB temperature indicator and BLE connection animation
-- Host-side C tests compiled with GCC using `-Wall -Wextra -Werror`
+- Host-side C tests built with GCC and
+  [ThrowTheSwitch Unity](https://github.com/ThrowTheSwitch/Unity), using
+  `-Wall -Wextra -Werror`
 
 ### Hardware peripherals
 
@@ -105,6 +107,7 @@ to update its UI and temperature alerts.
 | [`protocol/`](protocol/) | Canonical `device.proto` schema and generation scripts |
 | [`shared/uart_framing/`](shared/uart_framing/) | Portable UART framing and CRC implementation shared by both firmwares |
 | [`third_party/nanopb/`](third_party/nanopb/) | nanopb Git submodule |
+| [`third_party/unity/`](third_party/unity/) | ThrowTheSwitch Unity test framework Git submodule |
 | [`justfile`](justfile) | Repository development commands |
 
 ## Communication protocol
@@ -195,11 +198,12 @@ just apk
 
 ## Tests and formatting
 
-Run the STM32 host test suite:
+Configure, build, and run the STM32 host test suite:
 
 ```sh
-cd stm32
-bash ./Tests/run_tests.sh
+cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja -DCMAKE_C_COMPILER=gcc
+cmake --build stm32/Tests/.build/cmake
+ctest --test-dir stm32/Tests/.build/cmake --output-on-failure
 ```
 
 The suite tests UART framing and recovery, protobuf decoding, the receive ring

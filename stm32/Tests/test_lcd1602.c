@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "unity.h"
 #include "drivers/lcd1602.h"
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
@@ -13,16 +14,6 @@
 #define ROW_WRITE_TRANSMISSION_COUNT \
 	(CURSOR_TRANSMISSION_COUNT +     \
 		(LCD1602_COLUMN_COUNT * TRANSMISSIONS_PER_BYTE))
-
-#define CHECK(condition)                                                       \
-	do                                                                         \
-	{                                                                          \
-		if (!(condition))                                                      \
-		{                                                                      \
-			printf("    CHECK failed at line %d: %s\n", __LINE__, #condition); \
-			return false;                                                      \
-		}                                                                      \
-	} while (0)
 
 static uint8_t transmitted_states[256];
 static size_t transmission_count;
@@ -69,7 +60,7 @@ static char transmitted_character(size_t character_index)
 	return (char)((high_nibble & 0xF0U) | (low_nibble >> 4U));
 }
 
-static bool test_row_write_pads_to_display_width(void)
+static void test_row_write_pads_to_display_width(void)
 {
 	lcd1602_t lcd = {0};
 	size_t index;
@@ -77,19 +68,18 @@ static bool test_row_write_pads_to_display_width(void)
 	reset_transmissions();
 	lcd_1602_write_row(&lcd, 0U, "Hi");
 
-	CHECK(transmission_count == ROW_WRITE_TRANSMISSION_COUNT);
-	CHECK((transmitted_states[CURSOR_TRANSMISSION_COUNT] & LCD_RS) != 0U);
-	CHECK((transmitted_states[CURSOR_TRANSMISSION_COUNT] & LCD_ENABLE) == 0U);
-	CHECK(transmitted_character(0U) == 'H');
-	CHECK(transmitted_character(1U) == 'i');
+	TEST_ASSERT_TRUE(transmission_count == ROW_WRITE_TRANSMISSION_COUNT);
+	TEST_ASSERT_TRUE((transmitted_states[CURSOR_TRANSMISSION_COUNT] & LCD_RS) != 0U);
+	TEST_ASSERT_TRUE((transmitted_states[CURSOR_TRANSMISSION_COUNT] & LCD_ENABLE) == 0U);
+	TEST_ASSERT_TRUE(transmitted_character(0U) == 'H');
+	TEST_ASSERT_TRUE(transmitted_character(1U) == 'i');
 	for (index = 2U; index < LCD1602_COLUMN_COUNT; index++)
 	{
-		CHECK(transmitted_character(index) == ' ');
+		TEST_ASSERT_TRUE(transmitted_character(index) == ' ');
 	}
-	return true;
 }
 
-static bool test_row_write_skips_unchanged_content(void)
+static void test_row_write_skips_unchanged_content(void)
 {
 	lcd1602_t lcd = {0};
 
@@ -97,11 +87,10 @@ static bool test_row_write_skips_unchanged_content(void)
 	reset_transmissions();
 	lcd_1602_write_row(&lcd, 0U, "unchanged");
 
-	CHECK(transmission_count == 0U);
-	return true;
+	TEST_ASSERT_TRUE(transmission_count == 0U);
 }
 
-static bool test_row_write_tracks_rows_independently(void)
+static void test_row_write_tracks_rows_independently(void)
 {
 	lcd1602_t lcd = {0};
 
@@ -109,42 +98,37 @@ static bool test_row_write_tracks_rows_independently(void)
 	reset_transmissions();
 	lcd_1602_write_row(&lcd, 1U, "same");
 
-	CHECK(transmission_count == ROW_WRITE_TRANSMISSION_COUNT);
-	return true;
+	TEST_ASSERT_TRUE(transmission_count == ROW_WRITE_TRANSMISSION_COUNT);
 }
 
-typedef bool (*test_function_t)(void);
-
-typedef struct
+static void test_row_write_updates_changed_content(void)
 {
-	const char *name;
-	test_function_t function;
-} test_case_t;
+	lcd1602_t lcd = {0};
+
+	lcd_1602_write_row(&lcd, 0U, "old");
+	reset_transmissions();
+	lcd_1602_write_row(&lcd, 0U, "new");
+
+	TEST_ASSERT_EQUAL_UINT(ROW_WRITE_TRANSMISSION_COUNT, transmission_count);
+	TEST_ASSERT_EQUAL_CHAR('n', transmitted_character(0U));
+	TEST_ASSERT_EQUAL_CHAR('e', transmitted_character(1U));
+	TEST_ASSERT_EQUAL_CHAR('w', transmitted_character(2U));
+}
+
+void setUp(void)
+{
+}
+
+void tearDown(void)
+{
+}
 
 int main(void)
 {
-	const test_case_t tests[] = {
-		{"row writes pad to display width", test_row_write_pads_to_display_width},
-		{"row writes skip unchanged content", test_row_write_skips_unchanged_content},
-		{"row writes track rows independently", test_row_write_tracks_rows_independently},
-	};
-	size_t pos;
-	size_t passed = 0U;
-
-	for (pos = 0U; pos < ARRAY_SIZE(tests); pos++)
-	{
-		printf("[ RUN      ] %s\n", tests[pos].name);
-		if (tests[pos].function())
-		{
-			printf("[       OK ] %s\n", tests[pos].name);
-			passed++;
-		}
-		else
-		{
-			printf("[  FAILED  ] %s\n", tests[pos].name);
-		}
-	}
-
-	printf("\n%zu/%zu tests passed\n", passed, ARRAY_SIZE(tests));
-	return passed == ARRAY_SIZE(tests) ? 0 : 1;
+	UNITY_BEGIN();
+	RUN_TEST(test_row_write_pads_to_display_width);
+	RUN_TEST(test_row_write_skips_unchanged_content);
+	RUN_TEST(test_row_write_tracks_rows_independently);
+	RUN_TEST(test_row_write_updates_changed_content);
+	return UNITY_END();
 }

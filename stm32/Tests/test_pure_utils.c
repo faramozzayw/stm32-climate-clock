@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "unity.h"
 #include "byte_codec.h"
 #include "byte_ring_buffer.h"
 #include "calendar_time.h"
@@ -10,64 +11,50 @@
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 
-#define CHECK(condition)                                                       \
-	do                                                                         \
-	{                                                                          \
-		if (!(condition))                                                      \
-		{                                                                      \
-			printf("    CHECK failed at line %d: %s\n", __LINE__, #condition); \
-			return false;                                                      \
-		}                                                                      \
-	} while (0)
-
-static bool test_temperature_converts_to_fixed_point(void)
+static void test_temperature_converts_to_fixed_point(void)
 {
-	CHECK(tempToFixed(12.34f) == 123);
-	CHECK(tempToFixed(12.35f) == 124);
-	CHECK(tempToFixed(-0.05f) == -1);
-	return true;
+	TEST_ASSERT_TRUE(tempToFixed(12.34f) == 123);
+	TEST_ASSERT_TRUE(tempToFixed(12.35f) == 124);
+	TEST_ASSERT_TRUE(tempToFixed(-0.05f) == -1);
 }
 
-static bool test_temperature_converts_between_units(void)
+static void test_temperature_converts_between_units(void)
 {
-	CHECK(celsius_to_fahrenheit_fixed(0) == 320);
-	CHECK(celsius_to_fahrenheit_fixed(100) == 500);
-	CHECK(celsius_to_fahrenheit_fixed(-400) == -400);
-	return true;
+	TEST_ASSERT_TRUE(celsius_to_fahrenheit_fixed(0) == 320);
+	TEST_ASSERT_TRUE(celsius_to_fahrenheit_fixed(100) == 500);
+	TEST_ASSERT_TRUE(celsius_to_fahrenheit_fixed(-400) == -400);
 }
 
-static bool test_temperature_formats_signed_values(void)
+static void test_temperature_formats_signed_values(void)
 {
 	char buffer[16];
 
-	CHECK(fixed_temperature_to_string(
+	TEST_ASSERT_TRUE(fixed_temperature_to_string(
 		buffer, sizeof(buffer), 123, TEMPERATURE_UNIT_CELSIUS_SYMBOL));
-	CHECK(strcmp(buffer, "12.3 C") == 0);
+	TEST_ASSERT_TRUE(strcmp(buffer, "12.3 C") == 0);
 
-	CHECK(fixed_temperature_to_string(
+	TEST_ASSERT_TRUE(fixed_temperature_to_string(
 		buffer, sizeof(buffer), -5, TEMPERATURE_UNIT_FAHRENHEIT_SYMBOL));
-	CHECK(strcmp(buffer, "-0.5 F") == 0);
+	TEST_ASSERT_TRUE(strcmp(buffer, "-0.5 F") == 0);
 
-	CHECK(fixed_temperature_to_string(
+	TEST_ASSERT_TRUE(fixed_temperature_to_string(
 		buffer, sizeof(buffer), INT16_MIN, TEMPERATURE_UNIT_CELSIUS_SYMBOL));
-	CHECK(strcmp(buffer, "-3276.8 C") == 0);
-	return true;
+	TEST_ASSERT_TRUE(strcmp(buffer, "-3276.8 C") == 0);
 }
 
-static bool test_temperature_format_rejects_invalid_destination(void)
+static void test_temperature_format_rejects_invalid_destination(void)
 {
 	char buffer[5];
 
-	CHECK(!fixed_temperature_to_string(
+	TEST_ASSERT_TRUE(!fixed_temperature_to_string(
 		NULL, sizeof(buffer), 123, TEMPERATURE_UNIT_CELSIUS_SYMBOL));
-	CHECK(!fixed_temperature_to_string(
+	TEST_ASSERT_TRUE(!fixed_temperature_to_string(
 		buffer, 0U, 123, TEMPERATURE_UNIT_CELSIUS_SYMBOL));
-	CHECK(!fixed_temperature_to_string(
+	TEST_ASSERT_TRUE(!fixed_temperature_to_string(
 		buffer, sizeof(buffer), 123, TEMPERATURE_UNIT_CELSIUS_SYMBOL));
-	return true;
 }
 
-static bool test_byte_codec_round_trips_signed_values(void)
+static void test_byte_codec_round_trips_signed_values(void)
 {
 	const int16_t values[] = {0, 1, -1, INT16_MAX, INT16_MIN, 0x1234};
 	size_t pos;
@@ -77,170 +64,142 @@ static bool test_byte_codec_round_trips_signed_values(void)
 		uint8_t encoded[2];
 
 		write_int16_le(encoded, values[pos]);
-		CHECK(read_int16_le(encoded) == values[pos]);
+		TEST_ASSERT_TRUE(read_int16_le(encoded) == values[pos]);
 	}
-
-	return true;
 }
 
-static bool test_byte_codec_uses_little_endian_order(void)
+static void test_byte_codec_uses_little_endian_order(void)
 {
 	uint8_t encoded[2];
 
 	write_int16_le(encoded, 0x1234);
-	CHECK(encoded[0] == 0x34U);
-	CHECK(encoded[1] == 0x12U);
-	return true;
+	TEST_ASSERT_TRUE(encoded[0] == 0x34U);
+	TEST_ASSERT_TRUE(encoded[1] == 0x12U);
 }
 
-static bool test_calendar_time_converts_unix_epoch(void)
+static void test_calendar_time_converts_unix_epoch(void)
 {
 	calendar_time_t time;
 
-	CHECK(calendar_time_from_unix_ms(946684800000ULL, &time));
-	CHECK(time.year == 2000U);
-	CHECK(time.month == 1U);
-	CHECK(time.day == 1U);
-	CHECK(time.weekday == 7U);
-	CHECK(time.hour == 0U);
-	CHECK(time.minute == 0U);
-	CHECK(time.second == 0U);
-	return true;
+	TEST_ASSERT_TRUE(calendar_time_from_unix_ms(946684800000ULL, &time));
+	TEST_ASSERT_TRUE(time.year == 2000U);
+	TEST_ASSERT_TRUE(time.month == 1U);
+	TEST_ASSERT_TRUE(time.day == 1U);
+	TEST_ASSERT_TRUE(time.weekday == 7U);
+	TEST_ASSERT_TRUE(time.hour == 0U);
+	TEST_ASSERT_TRUE(time.minute == 0U);
+	TEST_ASSERT_TRUE(time.second == 0U);
 }
 
-static bool test_calendar_time_handles_leap_day_and_milliseconds(void)
+static void test_calendar_time_handles_leap_day_and_milliseconds(void)
 {
 	calendar_time_t time;
 
-	CHECK(calendar_time_from_unix_ms(951827696789ULL, &time));
-	CHECK(time.year == 2000U);
-	CHECK(time.month == 2U);
-	CHECK(time.day == 29U);
-	CHECK(time.weekday == 3U);
-	CHECK(time.hour == 12U);
-	CHECK(time.minute == 34U);
-	CHECK(time.second == 56U);
-	return true;
+	TEST_ASSERT_TRUE(calendar_time_from_unix_ms(951827696789ULL, &time));
+	TEST_ASSERT_TRUE(time.year == 2000U);
+	TEST_ASSERT_TRUE(time.month == 2U);
+	TEST_ASSERT_TRUE(time.day == 29U);
+	TEST_ASSERT_TRUE(time.weekday == 3U);
+	TEST_ASSERT_TRUE(time.hour == 12U);
+	TEST_ASSERT_TRUE(time.minute == 34U);
+	TEST_ASSERT_TRUE(time.second == 56U);
 }
 
-static bool test_calendar_time_rejects_unsupported_range(void)
+static void test_calendar_time_rejects_unsupported_range(void)
 {
 	calendar_time_t time = {.year = 1234U};
 
-	CHECK(!calendar_time_from_unix_ms(946684799999ULL, &time));
-	CHECK(time.year == 1234U);
-	CHECK(!calendar_time_from_unix_ms(4102444800000ULL, &time));
-	CHECK(time.year == 1234U);
-	CHECK(!calendar_time_from_unix_ms(946684800000ULL, NULL));
-	return true;
+	TEST_ASSERT_TRUE(!calendar_time_from_unix_ms(946684799999ULL, &time));
+	TEST_ASSERT_TRUE(time.year == 1234U);
+	TEST_ASSERT_TRUE(!calendar_time_from_unix_ms(4102444800000ULL, &time));
+	TEST_ASSERT_TRUE(time.year == 1234U);
+	TEST_ASSERT_TRUE(!calendar_time_from_unix_ms(946684800000ULL, NULL));
 }
 
-static bool test_byte_ring_buffer_validates_initialization(void)
+static void test_byte_ring_buffer_validates_initialization(void)
 {
 	byte_ring_buffer_t buffer = {0};
 	uint8_t storage[2];
 	uint8_t byte;
 
-	CHECK(!byte_ring_buffer_init(NULL, storage, sizeof(storage)));
-	CHECK(!byte_ring_buffer_init(&buffer, NULL, sizeof(storage)));
-	CHECK(!byte_ring_buffer_init(&buffer, storage, 1U));
-	CHECK(byte_ring_buffer_is_empty(&buffer));
-	CHECK(!byte_ring_buffer_push(&buffer, 1U));
-	CHECK(!byte_ring_buffer_pop(&buffer, &byte));
-	return true;
+	TEST_ASSERT_TRUE(!byte_ring_buffer_init(NULL, storage, sizeof(storage)));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_init(&buffer, NULL, sizeof(storage)));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_init(&buffer, storage, 1U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_push(&buffer, 1U));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_pop(&buffer, &byte));
 }
 
-static bool test_byte_ring_buffer_preserves_fifo_order(void)
+static void test_byte_ring_buffer_preserves_fifo_order(void)
 {
 	byte_ring_buffer_t buffer;
 	uint8_t storage[4];
 	uint8_t byte;
 
-	CHECK(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
-	CHECK(byte_ring_buffer_is_empty(&buffer));
-	CHECK(byte_ring_buffer_push(&buffer, 10U));
-	CHECK(byte_ring_buffer_push(&buffer, 20U));
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 10U);
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 20U);
-	CHECK(byte_ring_buffer_is_empty(&buffer));
-	CHECK(!byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(!byte_ring_buffer_pop(&buffer, NULL));
-	return true;
+	TEST_ASSERT_TRUE(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
+	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 10U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 20U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 10U);
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 20U);
+	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_pop(&buffer, NULL));
 }
 
-static bool test_byte_ring_buffer_rejects_full_and_wraps(void)
+static void test_byte_ring_buffer_rejects_full_and_wraps(void)
 {
 	byte_ring_buffer_t buffer;
 	uint8_t storage[4];
 	uint8_t byte;
 
-	CHECK(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
-	CHECK(byte_ring_buffer_push(&buffer, 1U));
-	CHECK(byte_ring_buffer_push(&buffer, 2U));
-	CHECK(byte_ring_buffer_push(&buffer, 3U));
-	CHECK(!byte_ring_buffer_push(&buffer, 4U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 1U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 2U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 3U));
+	TEST_ASSERT_TRUE(!byte_ring_buffer_push(&buffer, 4U));
 
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 1U);
-	CHECK(byte_ring_buffer_push(&buffer, 4U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 1U);
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 4U));
 
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 2U);
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 3U);
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 4U);
-	CHECK(byte_ring_buffer_is_empty(&buffer));
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 2U);
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 3U);
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 4U);
+	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
 
-	CHECK(byte_ring_buffer_push(&buffer, 5U));
-	CHECK(byte_ring_buffer_pop(&buffer, &byte));
-	CHECK(byte == 5U);
-	return true;
+	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 5U));
+	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
+	TEST_ASSERT_TRUE(byte == 5U);
 }
 
-typedef bool (*test_function_t)(void);
-
-typedef struct
+void setUp(void)
 {
-	const char *name;
-	test_function_t function;
-} test_case_t;
+}
+
+void tearDown(void)
+{
+}
 
 int main(void)
 {
-	const test_case_t tests[] = {
-		{"temperature converts to fixed point", test_temperature_converts_to_fixed_point},
-		{"temperature converts between units", test_temperature_converts_between_units},
-		{"temperature formats signed values", test_temperature_formats_signed_values},
-		{"temperature rejects invalid destination", test_temperature_format_rejects_invalid_destination},
-		{"byte codec round-trips signed values", test_byte_codec_round_trips_signed_values},
-		{"byte codec uses little-endian order", test_byte_codec_uses_little_endian_order},
-		{"calendar time converts Unix epoch", test_calendar_time_converts_unix_epoch},
-		{"calendar time handles leap day", test_calendar_time_handles_leap_day_and_milliseconds},
-		{"calendar time rejects unsupported range", test_calendar_time_rejects_unsupported_range},
-		{"byte ring buffer validates initialization", test_byte_ring_buffer_validates_initialization},
-		{"byte ring buffer preserves FIFO order", test_byte_ring_buffer_preserves_fifo_order},
-		{"byte ring buffer rejects full and wraps", test_byte_ring_buffer_rejects_full_and_wraps},
-	};
-	size_t pos;
-	size_t passed = 0U;
-
-	for (pos = 0U; pos < ARRAY_SIZE(tests); pos++)
-	{
-		printf("[ RUN      ] %s\n", tests[pos].name);
-		if (tests[pos].function())
-		{
-			printf("[       OK ] %s\n", tests[pos].name);
-			passed++;
-		}
-		else
-		{
-			printf("[  FAILED  ] %s\n", tests[pos].name);
-		}
-	}
-
-	printf("\n%zu/%zu tests passed\n", passed, ARRAY_SIZE(tests));
-	return passed == ARRAY_SIZE(tests) ? 0 : 1;
+	UNITY_BEGIN();
+	RUN_TEST(test_temperature_converts_to_fixed_point);
+	RUN_TEST(test_temperature_converts_between_units);
+	RUN_TEST(test_temperature_formats_signed_values);
+	RUN_TEST(test_temperature_format_rejects_invalid_destination);
+	RUN_TEST(test_byte_codec_round_trips_signed_values);
+	RUN_TEST(test_byte_codec_uses_little_endian_order);
+	RUN_TEST(test_calendar_time_converts_unix_epoch);
+	RUN_TEST(test_calendar_time_handles_leap_day_and_milliseconds);
+	RUN_TEST(test_calendar_time_rejects_unsupported_range);
+	RUN_TEST(test_byte_ring_buffer_validates_initialization);
+	RUN_TEST(test_byte_ring_buffer_preserves_fifo_order);
+	RUN_TEST(test_byte_ring_buffer_rejects_full_and_wraps);
+	return UNITY_END();
 }

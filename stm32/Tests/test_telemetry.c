@@ -2,22 +2,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "unity.h"
 #include "command_receiver/uart_frame.h"
 #include "device.pb.h"
 #include "pb_decode.h"
 #include "telemetry.h"
-
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
-
-#define CHECK(condition)                                                       \
-	do                                                                         \
-	{                                                                          \
-		if (!(condition))                                                      \
-		{                                                                      \
-			printf("    CHECK failed at line %d: %s\n", __LINE__, #condition); \
-			return false;                                                      \
-		}                                                                      \
-	} while (0)
 
 static bool decode_frame(
 	const uint8_t *frame,
@@ -54,68 +43,47 @@ static bool decode_frame(
 	}
 }
 
-static bool test_telemetry_round_trips_temperature_values(void)
+static void test_telemetry_round_trips_temperature_values(void)
 {
 	uint8_t frame[TELEMETRY_FRAME_MAX_SIZE];
 	uint16_t frame_length;
 	device_DeviceMessage message = device_DeviceMessage_init_zero;
 
-	CHECK(telemetry_encode_temperature(
+	TEST_ASSERT_TRUE(telemetry_encode_temperature(
 		-55, 100, 300, frame, sizeof(frame), &frame_length));
-	CHECK(frame_length <= sizeof(frame));
-	CHECK(decode_frame(frame, frame_length, &message));
-	CHECK(message.which_payload == device_DeviceMessage_telemetry_tag);
-	CHECK(message.payload.telemetry.current_temp == -55);
-	CHECK(message.payload.telemetry.min_temp == 100);
-	CHECK(message.payload.telemetry.max_temp == 300);
-	return true;
+	TEST_ASSERT_TRUE(frame_length <= sizeof(frame));
+	TEST_ASSERT_TRUE(decode_frame(frame, frame_length, &message));
+	TEST_ASSERT_TRUE(message.which_payload == device_DeviceMessage_telemetry_tag);
+	TEST_ASSERT_TRUE(message.payload.telemetry.current_temp == -55);
+	TEST_ASSERT_TRUE(message.payload.telemetry.min_temp == 100);
+	TEST_ASSERT_TRUE(message.payload.telemetry.max_temp == 300);
 }
 
-static bool test_telemetry_rejects_invalid_destinations(void)
+static void test_telemetry_rejects_invalid_destinations(void)
 {
 	uint8_t frame[TELEMETRY_FRAME_MAX_SIZE];
 	uint16_t frame_length;
 
-	CHECK(!telemetry_encode_temperature(
+	TEST_ASSERT_TRUE(!telemetry_encode_temperature(
 		0, 100, 300, NULL, sizeof(frame), &frame_length));
-	CHECK(!telemetry_encode_temperature(
+	TEST_ASSERT_TRUE(!telemetry_encode_temperature(
 		0, 100, 300, frame, sizeof(frame), NULL));
-	CHECK(!telemetry_encode_temperature(
+	TEST_ASSERT_TRUE(!telemetry_encode_temperature(
 		0, 100, 300, frame, 1U, &frame_length));
-	return true;
 }
 
-typedef bool (*test_function_t)(void);
-
-typedef struct
+void setUp(void)
 {
-	const char *name;
-	test_function_t function;
-} test_case_t;
+}
+
+void tearDown(void)
+{
+}
 
 int main(void)
 {
-	const test_case_t tests[] = {
-		{"telemetry round-trips temperature values", test_telemetry_round_trips_temperature_values},
-		{"telemetry rejects invalid destinations", test_telemetry_rejects_invalid_destinations},
-	};
-	size_t pos;
-	size_t passed = 0U;
-
-	for (pos = 0U; pos < ARRAY_SIZE(tests); pos++)
-	{
-		printf("[ RUN      ] %s\n", tests[pos].name);
-		if (tests[pos].function())
-		{
-			printf("[       OK ] %s\n", tests[pos].name);
-			passed++;
-		}
-		else
-		{
-			printf("[  FAILED  ] %s\n", tests[pos].name);
-		}
-	}
-
-	printf("\n%zu/%zu tests passed\n", passed, ARRAY_SIZE(tests));
-	return passed == ARRAY_SIZE(tests) ? 0 : 1;
+	UNITY_BEGIN();
+	RUN_TEST(test_telemetry_round_trips_temperature_values);
+	RUN_TEST(test_telemetry_rejects_invalid_destinations);
+	return UNITY_END();
 }

@@ -13,11 +13,22 @@ both Debug and Release retain the `Protocol` source entry.
 
 ## Host tests
 
-The command receiver tests compile the production frame parser, protobuf decoder,
-and UART receiver against a small HAL UART fake. Run them from `stm32` with:
+The host suite uses
+[ThrowTheSwitch Unity](https://github.com/ThrowTheSwitch/Unity) and compiles
+production modules against small HAL fakes. Unity and nanopb are Git
+submodules, so initialize dependencies before running the tests:
 
 ```console
-bash ./Tests/run_tests.sh
+git submodule update --init --recursive
 ```
 
-The runner requires `gcc` on `PATH` and treats compiler warnings as errors.
+Configure, build, and run the suite from the repository root:
+
+```console
+cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja -DCMAKE_C_COMPILER=gcc
+cmake --build stm32/Tests/.build/cmake
+ctest --test-dir stm32/Tests/.build/cmake --output-on-failure
+```
+
+The CMake project supports standard host toolchains and treats compiler warnings
+as errors.
