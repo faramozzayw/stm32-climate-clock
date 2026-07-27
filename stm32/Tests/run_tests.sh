@@ -9,6 +9,8 @@ command_receiver_executable="${build_dir}/command_receiver_tests"
 pure_utils_executable="${build_dir}/pure_utils_tests"
 telemetry_executable="${build_dir}/telemetry_tests"
 hal_uart_receiver_executable="${build_dir}/hal_uart_receiver_tests"
+screen_executable="${build_dir}/screen_tests"
+lcd1602_executable="${build_dir}/lcd1602_tests"
 compiler="${CC:-gcc}"
 
 if ! command -v "${compiler}" >/dev/null 2>&1; then
@@ -79,7 +81,33 @@ mkdir -p "${build_dir}"
     ../Core/Src/platform/hal_uart_receiver.c \
     -o "${hal_uart_receiver_executable}"
 
+"${compiler}" \
+    -std=c11 \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -Ifakes \
+    -I../Core/Inc \
+    -I../Core/Src \
+    test_screen.c \
+    ../Core/Src/app/screen.c \
+    ../Core/Src/temperature.c \
+    -o "${screen_executable}"
+
+"${compiler}" \
+    -std=c11 \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -I../Core/Inc \
+    -Ifakes \
+    test_lcd1602.c \
+    ../Core/Src/drivers/lcd1602.c \
+    -o "${lcd1602_executable}"
+
 "${command_receiver_executable}"
 "${pure_utils_executable}"
 "${telemetry_executable}"
 "${hal_uart_receiver_executable}"
+"${screen_executable}"
+"${lcd1602_executable}"

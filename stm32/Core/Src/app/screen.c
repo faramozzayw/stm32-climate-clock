@@ -1,6 +1,9 @@
 #include "screen.h"
 
-#define TIME_FORMAT "%02d:%02d %02d/%02d/%04d"
+#include <stdio.h>
+
+#define TIME_FORMAT "%02u:%02u %02u/%02u/%04u"
+#define TIME_TEXT_BUFFER_SIZE sizeof("255:255 255/255/65535")
 
 void screen_init(lcd1602_t *lcd)
 {
@@ -15,7 +18,8 @@ void screen_update(
 	int16_t temperature_celsius,
 	temperature_unit_t unit)
 {
-	char temperature_text[16];
+	char time_row[TIME_TEXT_BUFFER_SIZE];
+	char temperature_row[LCD1602_COLUMN_COUNT + 1U];
 	int16_t display_temperature = temperature_celsius;
 	char temperature_unit = TEMPERATURE_UNIT_CELSIUS_SYMBOL;
 
@@ -26,23 +30,22 @@ void screen_update(
 		temperature_unit = TEMPERATURE_UNIT_FAHRENHEIT_SYMBOL;
 	}
 
-	lcd_1602_clear(lcd);
-	lcd_1602_cur(lcd, 0, 0);
-	lcd_1602_printf(lcd,
+	snprintf(time_row,
+		sizeof(time_row),
 		TIME_FORMAT,
-		time->hour,
-		time->minute,
-		time->day,
-		time->month,
-		time->year);
+		(unsigned int)time->hour,
+		(unsigned int)time->minute,
+		(unsigned int)time->day,
+		(unsigned int)time->month,
+		(unsigned int)time->year);
 
-	lcd_1602_cur(lcd, 1, 0);
 	if (fixed_temperature_to_string(
-			temperature_text,
-			sizeof(temperature_text),
+			temperature_row,
+			sizeof(temperature_row),
 			display_temperature,
 			temperature_unit))
 	{
-		lcd_1602_printf(lcd, "%s", temperature_text);
+		lcd_1602_write_row(lcd, 0U, time_row);
+		lcd_1602_write_row(lcd, 1U, temperature_row);
 	}
 }

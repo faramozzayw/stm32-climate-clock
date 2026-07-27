@@ -1,5 +1,7 @@
 #include <drivers/lcd1602.h>
-#include "main.h"
+
+#include <stdbool.h>
+#include <string.h>
 
 // PCF8574 → LCD pin mapping (output latch bits)
 // RS=register select, RW=read/write, EN=enable strobe, BL=backlight
@@ -41,6 +43,8 @@
 // Switch controller from 8-bit mode to 4-bit mode.
 // Part of the HD44780 4-bit initialization sequence.
 #define LCD_CMD_INIT_RESET_2 0b00110010
+
+#define LCD_BLANK_CHARACTER ' '
 
 // -------------------- Low-level write --------------------
 static void lcd_write_state(lcd1602_t *lcd, uint8_t data)
@@ -84,6 +88,14 @@ static void lcd_data(lcd1602_t *lcd, uint8_t data)
 	lcd_send_nibble(lcd, data & 0x0F, LCD_RS);
 }
 
+static void lcd_print_raw(lcd1602_t *lcd, const char *str)
+{
+	while (*str)
+	{
+		lcd_data(lcd, (uint8_t)*str++);
+	}
+}
+
 // -------------------- Public API --------------------
 
 void lcd_1602_cur(lcd1602_t *lcd, int row, int col)
@@ -104,6 +116,7 @@ void lcd_1602_cur(lcd1602_t *lcd, int row, int col)
 void lcd_1602_init(lcd1602_t *lcd)
 {
 	lcd->state = LCD_BACKLIGHT;
+	lcd->valid_rows = 0U;
 	lcd_write_state(lcd, lcd->state);
 
 	lcd_command(lcd, LCD_CMD_INIT_RESET_1);
@@ -117,10 +130,8 @@ void lcd_1602_init(lcd1602_t *lcd)
 
 void lcd_1602_print(lcd1602_t *lcd, const char *str)
 {
-	while (*str)
-	{
-		lcd_data(lcd, (uint8_t)*str++);
-	}
+	lcd->valid_rows = 0U;
+	lcd_print_raw(lcd, str);
 }
 
 void lcd_1602_printf(lcd1602_t *lcd, const char *fmt, ...)
@@ -135,8 +146,43 @@ void lcd_1602_printf(lcd1602_t *lcd, const char *fmt, ...)
 	lcd_1602_print(lcd, buffer);
 }
 
+void lcd_1602_write_row(lcd1602_t *lcd, uint8_t row, const char *text)
+{
+	char padded_text[LCD1602_COLUMN_COUNT_WITH_NULL_TERMINATOR];
+	size_t length = strlen(text);
+	uint8_t row_mask = (uint8_t)(1U << row);
+
+	if (length > LCD1602_COLUMN_COUNT)
+	{
+		length = LCD1602_COLUMN_COUNT;
+	}
+
+	memcpy(padded_text, text, length);
+	memset(&padded_text[length], LCD_BLANK_CHARACTER, LCD1602_COLUMN_COUNT - length);
+	padded_text[LCD1602_COLUMN_COUNT] = '\0';
+
+	bool cache_is_valid = (lcd->valid_rows & row_mask) != 0U;
+	bool content_is_identical =
+		cache_is_valid &&
+		memcmp(
+			lcd->displayed_rows[row],
+			padded_text,
+			LCD1602_COLUMN_COUNT) == 0;
+
+	if (content_is_identical)
+	{
+		return;
+	}
+
+	lcd_1602_cur(lcd, row, 0);
+	lcd_print_raw(lcd, padded_text);
+	memcpy(lcd->displayed_rows[row], padded_text, LCD1602_COLUMN_COUNT_WITH_NULL_TERMINATOR);
+	lcd->valid_rows |= row_mask;
+}
+
 void lcd_1602_clear(lcd1602_t *lcd)
 {
+	lcd->valid_rows = 0U;
 	lcd_command(lcd, LCD_CMD_CLEAR_DISPLAY);
 }
 
