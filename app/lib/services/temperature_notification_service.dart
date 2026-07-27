@@ -155,5 +155,4 @@ class TemperatureNotificationService {
       notificationDetails: _details,
     );
   }
-
 }

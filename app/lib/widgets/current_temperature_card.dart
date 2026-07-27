@@ -85,5 +85,4 @@ class CurrentTemperatureCard extends StatelessWidget {
       ),
     );
   }
-
 }

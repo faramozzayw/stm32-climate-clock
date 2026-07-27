@@ -13,18 +13,9 @@ void main() {
   });
 
   test('formats a Celsius temperature for the selected display unit', () {
-    expect(
-      formatTemperatureWithUnit(0, fahrenheit: false),
-      '0.0 °C',
-    );
-    expect(
-      formatTemperatureWithUnit(0, fahrenheit: true),
-      '32.0 °F',
-    );
-    expect(
-      formatTemperatureWithUnit(-55, fahrenheit: false),
-      '-5.5 °C',
-    );
+    expect(formatTemperatureWithUnit(0, fahrenheit: false), '0.0 °C');
+    expect(formatTemperatureWithUnit(0, fahrenheit: true), '32.0 °F');
+    expect(formatTemperatureWithUnit(-55, fahrenheit: false), '-5.5 °C');
   });
 
   test('formats fixed-point tenths with one decimal place', () {
