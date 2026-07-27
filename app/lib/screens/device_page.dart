@@ -90,7 +90,21 @@ class _DevicePageState extends State<DevicePage> {
     }
   }
 
-  Future<void> _disconnect() => _ble.disconnect();
+  Future<void> _disconnect() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _status = 'Disconnecting…';
+    });
+
+    try {
+      await _ble.disconnect();
+    } catch (error) {
+      if (mounted) setState(() => _status = _friendlyError(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _sendTemperature({required bool maximum}) async {
     final controller = maximum ? _maxController : _minController;

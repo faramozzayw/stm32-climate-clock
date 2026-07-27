@@ -101,11 +101,11 @@ class ConnectionCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             ),
             child: busy
-                ? const SizedBox.square(
+                ? SizedBox.square(
                     dimension: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: connected ? const Color(0xFF5A4DB1) : Colors.white,
                     ),
                   )
                 : Text(connected ? 'Disconnect' : 'Connect'),

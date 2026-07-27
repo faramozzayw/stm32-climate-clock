@@ -12,7 +12,7 @@
 #include "platform/hal_uart_transport.h"
 #include "utils/temperature.h"
 
-#define APP_UPDATE_INTERVAL_MS 750U
+#define APP_UPDATE_INTERVAL_MS 250U
 
 typedef struct
 {

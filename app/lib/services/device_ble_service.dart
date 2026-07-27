@@ -20,6 +20,8 @@ class DeviceBleService {
   BluetoothCharacteristic? _txCharacteristic;
   StreamSubscription<BluetoothConnectionState>? _deviceStateSubscription;
   StreamSubscription<List<int>>? _telemetrySubscription;
+  Completer<void>? _disconnectCompleter;
+  Future<void>? _disconnectOperation;
 
   bool get isConnected => _rxCharacteristic != null;
   Stream<bool> get connectionChanges => _connectionChanges.stream;
@@ -75,7 +77,12 @@ class DeviceBleService {
       await _deviceStateSubscription?.cancel();
       _deviceStateSubscription = foundDevice.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
-          _clearConnection();
+          final completer = _disconnectCompleter;
+          if (completer != null && !completer.isCompleted) {
+            completer.complete();
+          } else {
+            _clearConnection();
+          }
         }
       });
 
@@ -94,21 +101,94 @@ class DeviceBleService {
     }
   }
 
-  Future<void> disconnect() async {
-    final device = _device;
-    if (device == null) return;
+  Future<void> disconnect() {
+    final pendingOperation = _disconnectOperation;
+    if (pendingOperation != null) return pendingOperation;
 
-    final txCharacteristic = _txCharacteristic;
-    if (txCharacteristic != null) {
+    final device = _device;
+    if (device == null) return Future.value();
+
+    final operation = _disconnectDevice(device);
+    _disconnectOperation = operation;
+    return operation.whenComplete(() {
+      if (identical(_disconnectOperation, operation)) {
+        _disconnectOperation = null;
+      }
+    });
+  }
+
+  Future<void> _disconnectDevice(BluetoothDevice device) async {
+    final linkDisconnected = Completer<void>();
+    _disconnectCompleter = linkDisconnected;
+
+    try {
+      await _signalDisconnecting();
+      await device.disconnect();
+      await _waitForBleLinkToClose(linkDisconnected);
+
       try {
-        await txCharacteristic.setNotifyValue(false);
-      } catch (_) {
-        // The physical link may already be gone.
+        await _waitForBridgeToBecomeAvailable(device);
+      } finally {
+        _clearConnection();
+      }
+    } finally {
+      if (identical(_disconnectCompleter, linkDisconnected)) {
+        _disconnectCompleter = null;
       }
     }
+  }
 
-    await device.disconnect();
-    _clearConnection();
+  Future<void> _signalDisconnecting() async {
+    final txCharacteristic = _txCharacteristic;
+    if (txCharacteristic == null) return;
+
+    try {
+      // The ESP32 observes this change and reports DISCONNECTING to the STM32.
+      await txCharacteristic.setNotifyValue(false);
+    } catch (_) {
+      // The physical link may already be gone.
+    }
+  }
+
+  Future<void> _waitForBleLinkToClose(Completer<void> linkDisconnected) async {
+    await linkDisconnected.future.timeout(
+      const Duration(seconds: 10),
+      onTimeout: () =>
+          throw TimeoutException('$deviceName did not finish disconnecting.'),
+    );
+  }
+
+  Future<void> _waitForBridgeToBecomeAvailable(BluetoothDevice device) async {
+    final advertising = Completer<void>();
+    StreamSubscription<List<ScanResult>>? scanSubscription;
+
+    try {
+      scanSubscription = FlutterBluePlus.onScanResults.listen((results) {
+        final foundDevice = results.any(
+          (result) => result.device.remoteId == device.remoteId,
+        );
+        if (foundDevice && !advertising.isCompleted) {
+          advertising.complete();
+        }
+      });
+
+      await FlutterBluePlus.startScan(
+        withServices: [_serviceUuid],
+        timeout: const Duration(seconds: 10),
+      );
+
+      // Advertising resumes after the ESP32 reports DISCONNECTED to the STM32.
+      await advertising.future.timeout(
+        const Duration(seconds: 11),
+        onTimeout: () =>
+            throw TimeoutException('$deviceName did not resume advertising.'),
+      );
+    } finally {
+      await scanSubscription?.cancel();
+      if (FlutterBluePlus.isScanningNow) {
+        await FlutterBluePlus.stopScan();
+      }
+    }
   }
 
   Future<void> send(DeviceCommand command) async {
@@ -125,8 +205,8 @@ class DeviceBleService {
 
   Future<void> dispose() async {
     await _telemetrySubscription?.cancel();
-    await _deviceStateSubscription?.cancel();
     await disconnect();
+    await _deviceStateSubscription?.cancel();
     await _connectionChanges.close();
     await _telemetry.close();
   }
