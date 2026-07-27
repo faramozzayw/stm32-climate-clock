@@ -16,47 +16,61 @@
 #define CONNECTION_LED_MIN_DUTY_PERCENT 10U
 #define CONNECTION_LED_MAX_DUTY_PERCENT 65U
 
-static void update_connection_led(app_t *app)
+static uint32_t connection_led_duty_from_percent(
+	uint32_t timer_period,
+	uint32_t percent)
 {
-	TIM_HandleTypeDef *timer = hw479_get_timer(app->hw479);
-	uint32_t period = __HAL_TIM_GET_AUTORELOAD(timer) + 1U;
-	uint32_t min_duty =
-		(period * CONNECTION_LED_MIN_DUTY_PERCENT) / 100U;
-	uint32_t max_duty =
-		(period * CONNECTION_LED_MAX_DUTY_PERCENT) / 100U;
-	uint32_t duty;
+	return (timer_period * percent) / 100U;
+}
 
-	switch (app->ble_connection_state)
+static uint32_t connection_led_breathe_duty(uint32_t timer_period)
+{
+	const uint32_t half_cycle = CONNECTION_LED_BREATHE_HALF_CYCLE_MS;
+	const uint32_t full_cycle = half_cycle * 2U;
+	const uint32_t min_duty = connection_led_duty_from_percent(
+		timer_period,
+		CONNECTION_LED_MIN_DUTY_PERCENT);
+	const uint32_t max_duty = connection_led_duty_from_percent(
+		timer_period,
+		CONNECTION_LED_MAX_DUTY_PERCENT);
+	uint32_t phase = HAL_GetTick() % full_cycle;
+
+	if (phase > half_cycle)
+	{
+		phase = full_cycle - phase;
+	}
+
+	return min_duty + (((max_duty - min_duty) * phase) / half_cycle);
+}
+
+static uint32_t connection_led_duty(
+	ble_connection_state_t connection_state,
+	uint32_t timer_period)
+{
+	switch (connection_state)
 	{
 	case BLE_CONNECTION_STATE_DISCONNECTED:
-		duty = 0U;
-		break;
+		return 0U;
 
 	case BLE_CONNECTION_STATE_CONNECTED:
-		duty = max_duty;
-		break;
+		return timer_period;
 
 	case BLE_CONNECTION_STATE_CONNECTING:
 	case BLE_CONNECTION_STATE_DISCONNECTING:
-	{
-		uint32_t phase = HAL_GetTick() %
-						 (CONNECTION_LED_BREATHE_HALF_CYCLE_MS * 2U);
-
-		if (phase > CONNECTION_LED_BREATHE_HALF_CYCLE_MS)
-		{
-			phase = (CONNECTION_LED_BREATHE_HALF_CYCLE_MS * 2U) - phase;
-		}
-
-		duty = min_duty +
-			   (((max_duty - min_duty) * phase) /
-				   CONNECTION_LED_BREATHE_HALF_CYCLE_MS);
-		break;
-	}
+		return connection_led_breathe_duty(timer_period);
 
 	default:
-		duty = 0U;
-		break;
+		return 0U;
 	}
+}
+
+static void update_connection_led(app_t *app)
+{
+	TIM_HandleTypeDef *timer = hw479_get_timer(app->hw479);
+	uint32_t timer_period = __HAL_TIM_GET_AUTORELOAD(timer) + 1U;
+	uint32_t duty = connection_led_duty(
+		app->ble_connection_state,
+		timer_period);
 
 	__HAL_TIM_SET_COMPARE(
 		timer,
