@@ -90,6 +90,7 @@ add_climateclock_test(screen_tests
 	"${STM32}/Core/Src/utils/temperature.c")
 target_include_directories(screen_tests BEFORE PRIVATE
 	fakes "${STM32}/Core/Src")
+target_link_libraries(screen_tests PRIVATE ${MATH_LIBRARY})
 
 add_climateclock_test(lcd1602_tests
 	test_lcd1602.c
