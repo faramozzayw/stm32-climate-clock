@@ -93,7 +93,6 @@ class _DevicePageState extends State<DevicePage> {
       if (mounted) {
         setState(() => _status = 'Connected to ${DeviceBleService.deviceName}');
       }
-      await _sendTemperatureUnit(announce: false);
     } catch (error) {
       if (mounted) setState(() => _status = _friendlyError(error));
     } finally {
@@ -163,7 +162,7 @@ class _DevicePageState extends State<DevicePage> {
     );
   }
 
-  Future<void> _sendTemperatureUnit({bool announce = true}) async {
+  Future<void> _sendTemperatureUnit() async {
     final command = DeviceCommand(
       setTemperatureUnit: SetTemperatureUnit(
         unit: _fahrenheit
@@ -171,7 +170,7 @@ class _DevicePageState extends State<DevicePage> {
             : TemperatureUnit.TEMPERATURE_UNIT_CELSIUS,
       ),
     );
-    await _send(command, announce ? 'Temperature unit changed' : null);
+    await _send(command, 'Temperature unit changed');
   }
 
   Future<void> _send(DeviceCommand command, String? successMessage) async {
@@ -211,15 +210,20 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   void _changeTemperatureUnit(bool fahrenheit) {
-    if (_fahrenheit == fahrenheit) return;
-
-    _convertController(_minController, _fahrenheit, fahrenheit);
-    _convertController(_maxController, _fahrenheit, fahrenheit);
-    setState(() => _fahrenheit = fahrenheit);
+    if (!_setTemperatureUnitLocally(fahrenheit)) return;
 
     if (_connected) {
       unawaited(_sendTemperatureUnit());
     }
+  }
+
+  bool _setTemperatureUnitLocally(bool fahrenheit) {
+    if (_fahrenheit == fahrenheit) return false;
+
+    _convertController(_minController, _fahrenheit, fahrenheit);
+    _convertController(_maxController, _fahrenheit, fahrenheit);
+    setState(() => _fahrenheit = fahrenheit);
+    return true;
   }
 
   void _convertController(
@@ -251,8 +255,8 @@ class _DevicePageState extends State<DevicePage> {
     switch (telemetry.whichData()) {
       case DeviceTelemetry_Data.measurement:
         _applyMeasurement(telemetry.measurement);
-      case DeviceTelemetry_Data.limits:
-        _applyLimits(telemetry.limits);
+      case DeviceTelemetry_Data.settings:
+        _applySettings(telemetry.settings);
       case DeviceTelemetry_Data.notSet:
         return;
     }
@@ -304,12 +308,16 @@ class _DevicePageState extends State<DevicePage> {
     }
   }
 
-  void _applyLimits(EnvironmentLimits limits) {
+  void _applySettings(DeviceSettings settings) {
+    _setTemperatureUnitLocally(
+      settings.temperatureUnit == TemperatureUnit.TEMPERATURE_UNIT_FAHRENHEIT,
+    );
+
     setState(() {
-      _deviceMinTemperature = limits.minTemperatureTenthsCelsius;
-      _deviceMaxTemperature = limits.maxTemperatureTenthsCelsius;
-      _deviceMinHumidityTenthsPercent = limits.minHumidityTenthsPercent;
-      _deviceMaxHumidityTenthsPercent = limits.maxHumidityTenthsPercent;
+      _deviceMinTemperature = settings.minTemperatureTenthsCelsius;
+      _deviceMaxTemperature = settings.maxTemperatureTenthsCelsius;
+      _deviceMinHumidityTenthsPercent = settings.minHumidityTenthsPercent;
+      _deviceMaxHumidityTenthsPercent = settings.maxHumidityTenthsPercent;
     });
   }
 

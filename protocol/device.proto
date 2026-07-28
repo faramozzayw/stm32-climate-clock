@@ -65,7 +65,7 @@ message SetTemperatureUnit {
 message DeviceTelemetry {
   oneof data {
     EnvironmentMeasurement measurement = 1;
-    EnvironmentLimits limits = 2;
+    DeviceSettings settings = 2;
   }
 }
 
@@ -76,7 +76,7 @@ message EnvironmentMeasurement {
   optional uint32 humidity_milli_percent = 2;
 }
 
-message EnvironmentLimits {
+message DeviceSettings {
   // Configured minimum temperature in tenths of a degree Celsius.
   sint32 min_temperature_tenths_celsius = 1;
   // Configured maximum temperature in tenths of a degree Celsius.
@@ -85,6 +85,8 @@ message EnvironmentLimits {
   uint32 min_humidity_tenths_percent = 3;
   // Configured maximum relative humidity in tenths of a percent.
   uint32 max_humidity_tenths_percent = 4;
+  // Unit selected on the device and stored in EEPROM.
+  TemperatureUnit temperature_unit = 5;
 }
 
 enum BleConnectionState {

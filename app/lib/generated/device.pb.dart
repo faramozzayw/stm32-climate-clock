@@ -634,16 +634,16 @@ class SetTemperatureUnit extends $pb.GeneratedMessage {
   void clearUnit() => $_clearField(1);
 }
 
-enum DeviceTelemetry_Data { measurement, limits, notSet }
+enum DeviceTelemetry_Data { measurement, settings, notSet }
 
 class DeviceTelemetry extends $pb.GeneratedMessage {
   factory DeviceTelemetry({
     EnvironmentMeasurement? measurement,
-    EnvironmentLimits? limits,
+    DeviceSettings? settings,
   }) {
     final result = create();
     if (measurement != null) result.measurement = measurement;
-    if (limits != null) result.limits = limits;
+    if (settings != null) result.settings = settings;
     return result;
   }
 
@@ -659,7 +659,7 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
   static const $core.Map<$core.int, DeviceTelemetry_Data>
       _DeviceTelemetry_DataByTag = {
     1: DeviceTelemetry_Data.measurement,
-    2: DeviceTelemetry_Data.limits,
+    2: DeviceTelemetry_Data.settings,
     0: DeviceTelemetry_Data.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -669,8 +669,8 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
     ..oo(0, [1, 2])
     ..aOM<EnvironmentMeasurement>(1, _omitFieldNames ? '' : 'measurement',
         subBuilder: EnvironmentMeasurement.create)
-    ..aOM<EnvironmentLimits>(2, _omitFieldNames ? '' : 'limits',
-        subBuilder: EnvironmentLimits.create)
+    ..aOM<DeviceSettings>(2, _omitFieldNames ? '' : 'settings',
+        subBuilder: DeviceSettings.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -712,15 +712,15 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
   EnvironmentMeasurement ensureMeasurement() => $_ensure(0);
 
   @$pb.TagNumber(2)
-  EnvironmentLimits get limits => $_getN(1);
+  DeviceSettings get settings => $_getN(1);
   @$pb.TagNumber(2)
-  set limits(EnvironmentLimits value) => $_setField(2, value);
+  set settings(DeviceSettings value) => $_setField(2, value);
   @$pb.TagNumber(2)
-  $core.bool hasLimits() => $_has(1);
+  $core.bool hasSettings() => $_has(1);
   @$pb.TagNumber(2)
-  void clearLimits() => $_clearField(2);
+  void clearSettings() => $_clearField(2);
   @$pb.TagNumber(2)
-  EnvironmentLimits ensureLimits() => $_ensure(1);
+  DeviceSettings ensureSettings() => $_ensure(1);
 }
 
 class EnvironmentMeasurement extends $pb.GeneratedMessage {
@@ -796,12 +796,13 @@ class EnvironmentMeasurement extends $pb.GeneratedMessage {
   void clearHumidityMilliPercent() => $_clearField(2);
 }
 
-class EnvironmentLimits extends $pb.GeneratedMessage {
-  factory EnvironmentLimits({
+class DeviceSettings extends $pb.GeneratedMessage {
+  factory DeviceSettings({
     $core.int? minTemperatureTenthsCelsius,
     $core.int? maxTemperatureTenthsCelsius,
     $core.int? minHumidityTenthsPercent,
     $core.int? maxHumidityTenthsPercent,
+    TemperatureUnit? temperatureUnit,
   }) {
     final result = create();
     if (minTemperatureTenthsCelsius != null)
@@ -812,20 +813,21 @@ class EnvironmentLimits extends $pb.GeneratedMessage {
       result.minHumidityTenthsPercent = minHumidityTenthsPercent;
     if (maxHumidityTenthsPercent != null)
       result.maxHumidityTenthsPercent = maxHumidityTenthsPercent;
+    if (temperatureUnit != null) result.temperatureUnit = temperatureUnit;
     return result;
   }
 
-  EnvironmentLimits._();
+  DeviceSettings._();
 
-  factory EnvironmentLimits.fromBuffer($core.List<$core.int> data,
+  factory DeviceSettings.fromBuffer($core.List<$core.int> data,
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
       create()..mergeFromBuffer(data, registry);
-  factory EnvironmentLimits.fromJson($core.String json,
+  factory DeviceSettings.fromJson($core.String json,
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
       create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EnvironmentLimits',
+      _omitMessageNames ? '' : 'DeviceSettings',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'minTemperatureTenthsCelsius',
@@ -836,26 +838,28 @@ class EnvironmentLimits extends $pb.GeneratedMessage {
         fieldType: $pb.PbFieldType.OU3)
     ..aI(4, _omitFieldNames ? '' : 'maxHumidityTenthsPercent',
         fieldType: $pb.PbFieldType.OU3)
+    ..aE<TemperatureUnit>(5, _omitFieldNames ? '' : 'temperatureUnit',
+        enumValues: TemperatureUnit.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EnvironmentLimits clone() => deepCopy();
+  DeviceSettings clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EnvironmentLimits copyWith(void Function(EnvironmentLimits) updates) =>
-      super.copyWith((message) => updates(message as EnvironmentLimits))
-          as EnvironmentLimits;
+  DeviceSettings copyWith(void Function(DeviceSettings) updates) =>
+      super.copyWith((message) => updates(message as DeviceSettings))
+          as DeviceSettings;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static EnvironmentLimits create() => EnvironmentLimits._();
+  static DeviceSettings create() => DeviceSettings._();
   @$core.override
-  EnvironmentLimits createEmptyInstance() => create();
+  DeviceSettings createEmptyInstance() => create();
   @$core.pragma('dart2js:noInline')
-  static EnvironmentLimits getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EnvironmentLimits>(create);
-  static EnvironmentLimits? _defaultInstance;
+  static DeviceSettings getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeviceSettings>(create);
+  static DeviceSettings? _defaultInstance;
 
   /// Configured minimum temperature in tenths of a degree Celsius.
   @$pb.TagNumber(1)
@@ -898,6 +902,16 @@ class EnvironmentLimits extends $pb.GeneratedMessage {
   $core.bool hasMaxHumidityTenthsPercent() => $_has(3);
   @$pb.TagNumber(4)
   void clearMaxHumidityTenthsPercent() => $_clearField(4);
+
+  /// Unit selected on the device and stored in EEPROM.
+  @$pb.TagNumber(5)
+  TemperatureUnit get temperatureUnit => $_getN(4);
+  @$pb.TagNumber(5)
+  set temperatureUnit(TemperatureUnit value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTemperatureUnit() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTemperatureUnit() => $_clearField(5);
 }
 
 /// BLE connection state reported by the ESP32 bridge to the STM32.

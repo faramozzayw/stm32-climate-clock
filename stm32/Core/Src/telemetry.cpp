@@ -62,25 +62,30 @@ bool encode_measurement_to_buffer(
 		frame_length);
 }
 
-bool encode_limits_to_buffer(
+bool encode_settings_to_buffer(
 	std::int16_t min_temperature,
 	std::int16_t max_temperature,
 	std::uint16_t min_humidity_tenths_percent,
 	std::uint16_t max_humidity_tenths_percent,
+	temperature_unit_t temperature_unit,
 	std::uint8_t *frame,
 	std::uint16_t frame_capacity,
 	std::uint16_t &frame_length)
 {
 	device_DeviceTelemetry telemetry = device_DeviceTelemetry_init_zero;
-	telemetry.which_data = device_DeviceTelemetry_limits_tag;
-	telemetry.data.limits.min_temperature_tenths_celsius =
+	telemetry.which_data = device_DeviceTelemetry_settings_tag;
+	telemetry.data.settings.min_temperature_tenths_celsius =
 		min_temperature;
-	telemetry.data.limits.max_temperature_tenths_celsius =
+	telemetry.data.settings.max_temperature_tenths_celsius =
 		max_temperature;
-	telemetry.data.limits.min_humidity_tenths_percent =
+	telemetry.data.settings.min_humidity_tenths_percent =
 		min_humidity_tenths_percent;
-	telemetry.data.limits.max_humidity_tenths_percent =
+	telemetry.data.settings.max_humidity_tenths_percent =
 		max_humidity_tenths_percent;
+	telemetry.data.settings.temperature_unit =
+		temperature_unit == TEMPERATURE_UNIT_FAHRENHEIT
+			? device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT
+			: device_TemperatureUnit_TEMPERATURE_UNIT_CELSIUS;
 
 	return encode_telemetry(
 		telemetry,

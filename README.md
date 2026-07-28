@@ -121,7 +121,7 @@ envelope containing:
 
 - Commands to set temperature and humidity limits, current time, and display
   unit
-- Environmental telemetry split into live measurements and configured limits,
+- Environmental telemetry split into live measurements and device settings,
   keeping each BLE notification within the default payload size
 - ESP32 bridge connection-state reports
 

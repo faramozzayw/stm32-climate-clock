@@ -78,7 +78,7 @@ typedef struct _device_EnvironmentMeasurement {
     uint32_t humidity_milli_percent;
 } device_EnvironmentMeasurement;
 
-typedef struct _device_EnvironmentLimits {
+typedef struct _device_DeviceSettings {
     /* Configured minimum temperature in tenths of a degree Celsius. */
     int32_t min_temperature_tenths_celsius;
     /* Configured maximum temperature in tenths of a degree Celsius. */
@@ -87,13 +87,15 @@ typedef struct _device_EnvironmentLimits {
     uint32_t min_humidity_tenths_percent;
     /* Configured maximum relative humidity in tenths of a percent. */
     uint32_t max_humidity_tenths_percent;
-} device_EnvironmentLimits;
+    /* Unit selected on the device and stored in EEPROM. */
+    device_TemperatureUnit temperature_unit;
+} device_DeviceSettings;
 
 typedef struct _device_DeviceTelemetry {
     pb_size_t which_data;
     union _device_DeviceTelemetry_data {
         device_EnvironmentMeasurement measurement;
-        device_EnvironmentLimits limits;
+        device_DeviceSettings settings;
     } data;
 } device_DeviceTelemetry;
 
@@ -137,6 +139,7 @@ extern "C" {
 
 
 
+#define device_DeviceSettings_temperature_unit_ENUMTYPE device_TemperatureUnit
 
 #define device_BridgeStatus_ble_connection_state_ENUMTYPE device_BleConnectionState
 
@@ -152,7 +155,7 @@ extern "C" {
 #define device_SetTemperatureUnit_init_default   {_device_TemperatureUnit_MIN}
 #define device_DeviceTelemetry_init_default      {0, {device_EnvironmentMeasurement_init_default}}
 #define device_EnvironmentMeasurement_init_default {0, false, 0}
-#define device_EnvironmentLimits_init_default    {0, 0, 0, 0}
+#define device_DeviceSettings_init_default       {0, 0, 0, 0, _device_TemperatureUnit_MIN}
 #define device_BridgeStatus_init_default         {_device_BleConnectionState_MIN}
 #define device_DeviceMessage_init_zero           {0, {device_DeviceCommand_init_zero}}
 #define device_DeviceCommand_init_zero           {0, {device_SetMaxTemp_init_zero}}
@@ -164,7 +167,7 @@ extern "C" {
 #define device_SetTemperatureUnit_init_zero      {_device_TemperatureUnit_MIN}
 #define device_DeviceTelemetry_init_zero         {0, {device_EnvironmentMeasurement_init_zero}}
 #define device_EnvironmentMeasurement_init_zero  {0, false, 0}
-#define device_EnvironmentLimits_init_zero       {0, 0, 0, 0}
+#define device_DeviceSettings_init_zero          {0, 0, 0, 0, _device_TemperatureUnit_MIN}
 #define device_BridgeStatus_init_zero            {_device_BleConnectionState_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -182,12 +185,13 @@ extern "C" {
 #define device_DeviceCommand_set_min_humidity_tag 6
 #define device_EnvironmentMeasurement_temperature_tenths_celsius_tag 1
 #define device_EnvironmentMeasurement_humidity_milli_percent_tag 2
-#define device_EnvironmentLimits_min_temperature_tenths_celsius_tag 1
-#define device_EnvironmentLimits_max_temperature_tenths_celsius_tag 2
-#define device_EnvironmentLimits_min_humidity_tenths_percent_tag 3
-#define device_EnvironmentLimits_max_humidity_tenths_percent_tag 4
+#define device_DeviceSettings_min_temperature_tenths_celsius_tag 1
+#define device_DeviceSettings_max_temperature_tenths_celsius_tag 2
+#define device_DeviceSettings_min_humidity_tenths_percent_tag 3
+#define device_DeviceSettings_max_humidity_tenths_percent_tag 4
+#define device_DeviceSettings_temperature_unit_tag 5
 #define device_DeviceTelemetry_measurement_tag   1
-#define device_DeviceTelemetry_limits_tag        2
+#define device_DeviceTelemetry_settings_tag      2
 #define device_BridgeStatus_ble_connection_state_tag 1
 #define device_DeviceMessage_command_tag         1
 #define device_DeviceMessage_telemetry_tag       2
@@ -252,11 +256,11 @@ X(a, STATIC,   SINGULAR, UENUM,    unit,              1)
 
 #define device_DeviceTelemetry_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,measurement,data.measurement),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,limits,data.limits),   2)
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,settings,data.settings),   2)
 #define device_DeviceTelemetry_CALLBACK NULL
 #define device_DeviceTelemetry_DEFAULT NULL
 #define device_DeviceTelemetry_data_measurement_MSGTYPE device_EnvironmentMeasurement
-#define device_DeviceTelemetry_data_limits_MSGTYPE device_EnvironmentLimits
+#define device_DeviceTelemetry_data_settings_MSGTYPE device_DeviceSettings
 
 #define device_EnvironmentMeasurement_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   temperature_tenths_celsius,   1) \
@@ -264,13 +268,14 @@ X(a, STATIC,   OPTIONAL, UINT32,   humidity_milli_percent,   2)
 #define device_EnvironmentMeasurement_CALLBACK NULL
 #define device_EnvironmentMeasurement_DEFAULT NULL
 
-#define device_EnvironmentLimits_FIELDLIST(X, a) \
+#define device_DeviceSettings_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   min_temperature_tenths_celsius,   1) \
 X(a, STATIC,   SINGULAR, SINT32,   max_temperature_tenths_celsius,   2) \
 X(a, STATIC,   SINGULAR, UINT32,   min_humidity_tenths_percent,   3) \
-X(a, STATIC,   SINGULAR, UINT32,   max_humidity_tenths_percent,   4)
-#define device_EnvironmentLimits_CALLBACK NULL
-#define device_EnvironmentLimits_DEFAULT NULL
+X(a, STATIC,   SINGULAR, UINT32,   max_humidity_tenths_percent,   4) \
+X(a, STATIC,   SINGULAR, UENUM,    temperature_unit,   5)
+#define device_DeviceSettings_CALLBACK NULL
+#define device_DeviceSettings_DEFAULT NULL
 
 #define device_BridgeStatus_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    ble_connection_state,   1)
@@ -287,7 +292,7 @@ extern const pb_msgdesc_t device_SetCurrentTime_msg;
 extern const pb_msgdesc_t device_SetTemperatureUnit_msg;
 extern const pb_msgdesc_t device_DeviceTelemetry_msg;
 extern const pb_msgdesc_t device_EnvironmentMeasurement_msg;
-extern const pb_msgdesc_t device_EnvironmentLimits_msg;
+extern const pb_msgdesc_t device_DeviceSettings_msg;
 extern const pb_msgdesc_t device_BridgeStatus_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
@@ -301,16 +306,16 @@ extern const pb_msgdesc_t device_BridgeStatus_msg;
 #define device_SetTemperatureUnit_fields &device_SetTemperatureUnit_msg
 #define device_DeviceTelemetry_fields &device_DeviceTelemetry_msg
 #define device_EnvironmentMeasurement_fields &device_EnvironmentMeasurement_msg
-#define device_EnvironmentLimits_fields &device_EnvironmentLimits_msg
+#define device_DeviceSettings_fields &device_DeviceSettings_msg
 #define device_BridgeStatus_fields &device_BridgeStatus_msg
 
 /* Maximum encoded size of messages (where known) */
 #define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceMessage_size
 #define device_BridgeStatus_size                 2
 #define device_DeviceCommand_size                13
-#define device_DeviceMessage_size                28
-#define device_DeviceTelemetry_size              26
-#define device_EnvironmentLimits_size            24
+#define device_DeviceMessage_size                30
+#define device_DeviceSettings_size               26
+#define device_DeviceTelemetry_size              28
 #define device_EnvironmentMeasurement_size       12
 #define device_SetCurrentTime_size               11
 #define device_SetMaxHumidity_size               6

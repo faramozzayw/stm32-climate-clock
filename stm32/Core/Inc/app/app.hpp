@@ -63,7 +63,7 @@ class App
 	ble_connection_state_t connection_state_{
 		BLE_CONNECTION_STATE_DISCONNECTED};
 	bool eeprom_ready_{false};
-	bool limits_telemetry_pending_{false};
+	bool settings_telemetry_pending_{false};
 };
 } // namespace climate_clock
 

@@ -36,7 +36,7 @@ PB_BIND(device_DeviceTelemetry, device_DeviceTelemetry, AUTO)
 PB_BIND(device_EnvironmentMeasurement, device_EnvironmentMeasurement, AUTO)
 
 
-PB_BIND(device_EnvironmentLimits, device_EnvironmentLimits, AUTO)
+PB_BIND(device_DeviceSettings, device_DeviceSettings, AUTO)
 
 
 PB_BIND(device_BridgeStatus, device_BridgeStatus, AUTO)

@@ -260,13 +260,13 @@ const DeviceTelemetry$json = {
       '10': 'measurement'
     },
     {
-      '1': 'limits',
+      '1': 'settings',
       '3': 2,
       '4': 1,
       '5': 11,
-      '6': '.device.EnvironmentLimits',
+      '6': '.device.DeviceSettings',
       '9': 0,
-      '10': 'limits'
+      '10': 'settings'
     },
   ],
   '8': [
@@ -277,8 +277,8 @@ const DeviceTelemetry$json = {
 /// Descriptor for `DeviceTelemetry`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deviceTelemetryDescriptor = $convert.base64Decode(
     'Cg9EZXZpY2VUZWxlbWV0cnkSQgoLbWVhc3VyZW1lbnQYASABKAsyHi5kZXZpY2UuRW52aXJvbm'
-    '1lbnRNZWFzdXJlbWVudEgAUgttZWFzdXJlbWVudBIzCgZsaW1pdHMYAiABKAsyGS5kZXZpY2Uu'
-    'RW52aXJvbm1lbnRMaW1pdHNIAFIGbGltaXRzQgYKBGRhdGE=');
+    '1lbnRNZWFzdXJlbWVudEgAUgttZWFzdXJlbWVudBI0CghzZXR0aW5ncxgCIAEoCzIWLmRldmlj'
+    'ZS5EZXZpY2VTZXR0aW5nc0gAUghzZXR0aW5nc0IGCgRkYXRh');
 
 @$core.Deprecated('Use environmentMeasurementDescriptor instead')
 const EnvironmentMeasurement$json = {
@@ -313,9 +313,9 @@ final $typed_data.Uint8List environmentMeasurementDescriptor = $convert.base64De
     'dBgCIAEoDUgAUhRodW1pZGl0eU1pbGxpUGVyY2VudIgBAUIZChdfaHVtaWRpdHlfbWlsbGlfcG'
     'VyY2VudA==');
 
-@$core.Deprecated('Use environmentLimitsDescriptor instead')
-const EnvironmentLimits$json = {
-  '1': 'EnvironmentLimits',
+@$core.Deprecated('Use deviceSettingsDescriptor instead')
+const DeviceSettings$json = {
+  '1': 'DeviceSettings',
   '2': [
     {
       '1': 'min_temperature_tenths_celsius',
@@ -345,17 +345,26 @@ const EnvironmentLimits$json = {
       '5': 13,
       '10': 'maxHumidityTenthsPercent'
     },
+    {
+      '1': 'temperature_unit',
+      '3': 5,
+      '4': 1,
+      '5': 14,
+      '6': '.device.TemperatureUnit',
+      '10': 'temperatureUnit'
+    },
   ],
 };
 
-/// Descriptor for `EnvironmentLimits`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List environmentLimitsDescriptor = $convert.base64Decode(
-    'ChFFbnZpcm9ubWVudExpbWl0cxJDCh5taW5fdGVtcGVyYXR1cmVfdGVudGhzX2NlbHNpdXMYAS'
-    'ABKBFSG21pblRlbXBlcmF0dXJlVGVudGhzQ2Vsc2l1cxJDCh5tYXhfdGVtcGVyYXR1cmVfdGVu'
-    'dGhzX2NlbHNpdXMYAiABKBFSG21heFRlbXBlcmF0dXJlVGVudGhzQ2Vsc2l1cxI9ChttaW5faH'
-    'VtaWRpdHlfdGVudGhzX3BlcmNlbnQYAyABKA1SGG1pbkh1bWlkaXR5VGVudGhzUGVyY2VudBI9'
-    'ChttYXhfaHVtaWRpdHlfdGVudGhzX3BlcmNlbnQYBCABKA1SGG1heEh1bWlkaXR5VGVudGhzUG'
-    'VyY2VudA==');
+/// Descriptor for `DeviceSettings`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deviceSettingsDescriptor = $convert.base64Decode(
+    'Cg5EZXZpY2VTZXR0aW5ncxJDCh5taW5fdGVtcGVyYXR1cmVfdGVudGhzX2NlbHNpdXMYASABKB'
+    'FSG21pblRlbXBlcmF0dXJlVGVudGhzQ2Vsc2l1cxJDCh5tYXhfdGVtcGVyYXR1cmVfdGVudGhz'
+    'X2NlbHNpdXMYAiABKBFSG21heFRlbXBlcmF0dXJlVGVudGhzQ2Vsc2l1cxI9ChttaW5faHVtaW'
+    'RpdHlfdGVudGhzX3BlcmNlbnQYAyABKA1SGG1pbkh1bWlkaXR5VGVudGhzUGVyY2VudBI9Chtt'
+    'YXhfaHVtaWRpdHlfdGVudGhzX3BlcmNlbnQYBCABKA1SGG1heEh1bWlkaXR5VGVudGhzUGVyY2'
+    'VudBJCChB0ZW1wZXJhdHVyZV91bml0GAUgASgOMhcuZGV2aWNlLlRlbXBlcmF0dXJlVW5pdFIP'
+    'dGVtcGVyYXR1cmVVbml0');
 
 @$core.Deprecated('Use bridgeStatusDescriptor instead')
 const BridgeStatus$json = {

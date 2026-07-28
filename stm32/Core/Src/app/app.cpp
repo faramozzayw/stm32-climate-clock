@@ -200,6 +200,26 @@ void App::update()
 	std::uint16_t telemetry_frame_length;
 	Bmx280Measurement measurement{};
 
+	const bool settings_were_pending = settings_telemetry_pending_;
+	if (settings_were_pending)
+	{
+		if (telemetry::encode_settings(
+				min_temperature_,
+				max_temperature_,
+				min_humidity_tenths_percent_,
+				max_humidity_tenths_percent_,
+				temperature_unit_,
+				telemetry_frame,
+				telemetry_frame_length) &&
+			hal_uart_transport_send(
+				&telemetry_transport_,
+				telemetry_frame,
+				telemetry_frame_length))
+		{
+			settings_telemetry_pending_ = false;
+		}
+	}
+
 	const auto time = ds3231_get_time(&rtc_);
 	const auto sensor_status = environment_sensor_.read(measurement);
 	if (sensor_status != Bmx280Status::ok)
@@ -213,28 +233,12 @@ void App::update()
 	const auto temperature = centi_celsius_to_tenths(
 		measurement.temperature_centi_celsius);
 
-	if (limits_telemetry_pending_)
-	{
-		if (telemetry::encode_limits(
-				min_temperature_,
-				max_temperature_,
-				min_humidity_tenths_percent_,
-				max_humidity_tenths_percent_,
-				telemetry_frame,
-				telemetry_frame_length) &&
-			hal_uart_transport_send(
-				&telemetry_transport_,
-				telemetry_frame,
-				telemetry_frame_length))
-		{
-			limits_telemetry_pending_ = false;
-		}
-	}
-	else if (telemetry::encode_measurement(
-				 temperature,
-				 measurement.humidity_milli_percent,
-				 telemetry_frame,
-				 telemetry_frame_length))
+	if (!settings_were_pending &&
+		telemetry::encode_measurement(
+			temperature,
+			measurement.humidity_milli_percent,
+			telemetry_frame,
+			telemetry_frame_length))
 	{
 		hal_uart_transport_send(
 			&telemetry_transport_,
@@ -260,7 +264,7 @@ void App::apply_received_messages()
 	if (values.min_temp_updated)
 	{
 		min_temperature_ = values.min_temp;
-		limits_telemetry_pending_ = true;
+		settings_telemetry_pending_ = true;
 		values.min_temp_updated = false;
 
 		if (eeprom_ready_ &&
@@ -274,7 +278,7 @@ void App::apply_received_messages()
 	if (values.max_temp_updated)
 	{
 		max_temperature_ = values.max_temp;
-		limits_telemetry_pending_ = true;
+		settings_telemetry_pending_ = true;
 		values.max_temp_updated = false;
 
 		if (eeprom_ready_ &&
@@ -289,7 +293,7 @@ void App::apply_received_messages()
 	{
 		min_humidity_tenths_percent_ =
 			values.min_humidity_tenths_percent;
-		limits_telemetry_pending_ = true;
+		settings_telemetry_pending_ = true;
 		values.min_humidity_updated = false;
 
 		if (eeprom_ready_ &&
@@ -304,7 +308,7 @@ void App::apply_received_messages()
 	{
 		max_humidity_tenths_percent_ =
 			values.max_humidity_tenths_percent;
-		limits_telemetry_pending_ = true;
+		settings_telemetry_pending_ = true;
 		values.max_humidity_updated = false;
 
 		if (eeprom_ready_ &&
@@ -365,6 +369,7 @@ void App::set_temperature_unit(temperature_unit_t unit)
 	}
 
 	temperature_unit_ = unit;
+	settings_telemetry_pending_ = true;
 
 	if (eeprom_ready_ &&
 		settings_.save_temperature_unit(unit) != AT24C256_OK)
@@ -376,7 +381,7 @@ void App::set_temperature_unit(temperature_unit_t unit)
 void App::set_connection_state(ble_connection_state_t state)
 {
 	connection_state_ = state;
-	limits_telemetry_pending_ =
+	settings_telemetry_pending_ =
 		state == BLE_CONNECTION_STATE_CONNECTED;
 	update_connection_led();
 }

@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "command_receiver/uart_frame.h"
+#include "utils/temperature.h"
 
 namespace climate_clock::telemetry
 {
@@ -21,11 +22,12 @@ namespace detail
 	std::uint16_t frame_capacity,
 	std::uint16_t &frame_length);
 
-[[nodiscard]] bool encode_limits_to_buffer(
+[[nodiscard]] bool encode_settings_to_buffer(
 	std::int16_t min_temperature,
 	std::int16_t max_temperature,
 	std::uint16_t min_humidity_tenths_percent,
 	std::uint16_t max_humidity_tenths_percent,
+	temperature_unit_t temperature_unit,
 	std::uint8_t *frame,
 	std::uint16_t frame_capacity,
 	std::uint16_t &frame_length);
@@ -50,22 +52,24 @@ template <std::size_t Capacity>
 }
 
 template <std::size_t Capacity>
-[[nodiscard]] bool encode_limits(
+[[nodiscard]] bool encode_settings(
 	std::int16_t min_temperature,
 	std::int16_t max_temperature,
 	std::uint16_t min_humidity_tenths_percent,
 	std::uint16_t max_humidity_tenths_percent,
+	temperature_unit_t temperature_unit,
 	std::uint8_t (&frame)[Capacity],
 	std::uint16_t &frame_length)
 {
 	static_assert(
 		Capacity <= std::numeric_limits<std::uint16_t>::max());
 
-	return detail::encode_limits_to_buffer(
+	return detail::encode_settings_to_buffer(
 		min_temperature,
 		max_temperature,
 		min_humidity_tenths_percent,
 		max_humidity_tenths_percent,
+		temperature_unit,
 		frame,
 		static_cast<std::uint16_t>(Capacity),
 		frame_length);
