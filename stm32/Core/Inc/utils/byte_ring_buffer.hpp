@@ -16,19 +16,11 @@ namespace climate_clock
 class ByteRingBuffer
 {
   public:
-	template <std::size_t Capacity>
 	ByteRingBuffer(
-		std::uint8_t (&storage)[Capacity],
+		std::uint8_t *storage,
+		std::size_t capacity,
 		volatile std::uint16_t &head,
-		volatile std::uint16_t &tail)
-		: storage_(storage),
-		  capacity_(static_cast<std::uint16_t>(Capacity)),
-		  head_(head),
-		  tail_(tail)
-	{
-		static_assert(Capacity >= 2U);
-		static_assert(Capacity <= UINT16_MAX);
-	}
+		volatile std::uint16_t &tail);
 
 	void reset();
 	[[nodiscard]] bool push(std::uint8_t byte);
@@ -39,7 +31,7 @@ class ByteRingBuffer
 	[[nodiscard]] std::uint16_t next_index(std::uint16_t index) const;
 
 	std::uint8_t *storage_;
-	std::uint16_t capacity_;
+	std::size_t capacity_;
 	volatile std::uint16_t &head_;
 	volatile std::uint16_t &tail_;
 };

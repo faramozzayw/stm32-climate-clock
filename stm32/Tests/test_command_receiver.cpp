@@ -1,17 +1,32 @@
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <iterator>
+#include <variant>
 
+extern "C"
+{
 #include "unity.h"
-#include "command_receiver/device_message_decoder.h"
+}
+
+#include "command_receiver/device_message_decoder.hpp"
 #include "command_receiver/uart_command_receiver.h"
 #include "command_receiver/uart_frame.h"
 #include "device.pb.h"
 #include "pb_encode.h"
 
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
-#define TEST_FRAME_MAX_SIZE (2U + 2U + UART_FRAME_MAX_PAYLOAD_SIZE + 2U)
+using climate_clock::BleConnectionStateChanged;
+using climate_clock::decode_device_message;
+using climate_clock::DecodeError;
+using climate_clock::DecodeResult;
+using climate_clock::SetCurrentTime;
+using climate_clock::SetMaximumTemperature;
+using climate_clock::SetMinimumTemperature;
+using climate_clock::SetTemperatureUnit;
+
+constexpr std::size_t test_frame_max_size =
+	2U + 2U + UART_FRAME_MAX_PAYLOAD_SIZE + 2U;
 
 static uint16_t crc16_ccitt(const uint8_t *data, size_t length)
 {
@@ -43,7 +58,7 @@ static size_t make_frame(const uint8_t *payload, size_t payload_length,
 	frame[1] = UART_FRAME_MAGIC_2;
 	frame[2] = (uint8_t)payload_length;
 	frame[3] = (uint8_t)(payload_length >> 8U);
-	memcpy(&frame[4], payload, payload_length);
+	std::memcpy(&frame[4], payload, payload_length);
 	crc = crc16_ccitt(&frame[2], payload_length + 2U);
 	frame[4U + payload_length] = (uint8_t)crc;
 	frame[5U + payload_length] = (uint8_t)(crc >> 8U);
@@ -74,6 +89,17 @@ static size_t encode_command(const device_DeviceCommand *command,
 	return encode_message(&message, payload);
 }
 
+template <typename Message>
+static const Message *decoded_value(const DecodeResult &result)
+{
+	if (!result)
+	{
+		return nullptr;
+	}
+
+	return std::get_if<Message>(&result.value());
+}
+
 static void receiver_feed(uart_command_receiver_t *receiver,
 	const uint8_t *bytes, size_t length)
 {
@@ -88,10 +114,10 @@ static void receiver_feed(uart_command_receiver_t *receiver,
 static void test_frame_parser_accepts_valid_frame(void)
 {
 	const uint8_t payload[] = {0x08U, 0x96U, 0x01U};
-	uint8_t encoded[TEST_FRAME_MAX_SIZE];
+	uint8_t encoded[test_frame_max_size];
 	size_t encoded_length = make_frame(payload, sizeof(payload), encoded);
 	uart_frame_parser_t parser;
-	uart_frame_view_t view = {0};
+	uart_frame_view_t view{};
 	size_t pos;
 
 	uart_frame_parser_init(&parser);
@@ -103,7 +129,8 @@ static void test_frame_parser_accepts_valid_frame(void)
 	TEST_ASSERT_TRUE(uart_frame_parser_process(&parser, encoded[pos], &view) ==
 					 UART_FRAME_RESULT_COMPLETE);
 	TEST_ASSERT_TRUE(view.payload_length == sizeof(payload));
-	TEST_ASSERT_TRUE(memcmp(view.payload, payload, sizeof(payload)) == 0);
+	TEST_ASSERT_TRUE(
+		std::memcmp(view.payload, payload, sizeof(payload)) == 0);
 	TEST_ASSERT_TRUE(parser.state == UART_FRAME_WAIT_MAGIC_1);
 }
 
@@ -112,14 +139,14 @@ static void test_frame_parser_resynchronizes_after_noise_and_repeated_magic(void
 	const uint8_t payload[] = {0x01U};
 	const uint8_t prefix[] = {0x00U, UART_FRAME_MAGIC_1, 0x00U,
 		UART_FRAME_MAGIC_1};
-	uint8_t encoded[TEST_FRAME_MAX_SIZE];
+	uint8_t encoded[test_frame_max_size];
 	size_t encoded_length = make_frame(payload, sizeof(payload), encoded);
 	uart_frame_parser_t parser;
 	uart_frame_view_t view;
 	size_t pos;
 
 	uart_frame_parser_init(&parser);
-	for (pos = 0U; pos < ARRAY_SIZE(prefix); pos++)
+	for (pos = 0U; pos < std::size(prefix); pos++)
 	{
 		TEST_ASSERT_TRUE(uart_frame_parser_process(&parser, prefix[pos], &view) ==
 						 UART_FRAME_RESULT_IN_PROGRESS);
@@ -143,26 +170,26 @@ static void test_frame_parser_rejects_bad_lengths_and_crc_then_recovers(void)
 	const uint8_t oversized_header[] = {UART_FRAME_MAGIC_1,
 		UART_FRAME_MAGIC_2, UART_FRAME_MAX_PAYLOAD_SIZE + 1U, 0x00U};
 	const uint8_t payload[] = {0x42U};
-	uint8_t encoded[TEST_FRAME_MAX_SIZE];
+	uint8_t encoded[test_frame_max_size];
 	size_t encoded_length = make_frame(payload, sizeof(payload), encoded);
 	uart_frame_parser_t parser;
 	uart_frame_view_t view;
 	size_t pos;
 
 	uart_frame_parser_init(&parser);
-	for (pos = 0U; pos < ARRAY_SIZE(zero_length_header); pos++)
+	for (pos = 0U; pos < std::size(zero_length_header); pos++)
 	{
 		uart_frame_result_t result = uart_frame_parser_process(&parser,
 			zero_length_header[pos], &view);
-		TEST_ASSERT_TRUE(result == (pos + 1U == ARRAY_SIZE(zero_length_header)
+		TEST_ASSERT_TRUE(result == (pos + 1U == std::size(zero_length_header)
 										   ? UART_FRAME_RESULT_ERROR
 										   : UART_FRAME_RESULT_IN_PROGRESS));
 	}
-	for (pos = 0U; pos < ARRAY_SIZE(oversized_header); pos++)
+	for (pos = 0U; pos < std::size(oversized_header); pos++)
 	{
 		uart_frame_result_t result = uart_frame_parser_process(&parser,
 			oversized_header[pos], &view);
-		TEST_ASSERT_TRUE(result == (pos + 1U == ARRAY_SIZE(oversized_header)
+		TEST_ASSERT_TRUE(result == (pos + 1U == std::size(oversized_header)
 										   ? UART_FRAME_RESULT_ERROR
 										   : UART_FRAME_RESULT_IN_PROGRESS));
 	}
@@ -194,16 +221,15 @@ static void test_frame_parser_rejects_null_arguments(void)
 	uart_frame_view_t view;
 
 	uart_frame_parser_init(&parser);
-	TEST_ASSERT_TRUE(uart_frame_parser_process(NULL, 0U, &view) ==
+	TEST_ASSERT_TRUE(uart_frame_parser_process(nullptr, 0U, &view) ==
 					 UART_FRAME_RESULT_ERROR);
-	TEST_ASSERT_TRUE(uart_frame_parser_process(&parser, 0U, NULL) ==
+	TEST_ASSERT_TRUE(uart_frame_parser_process(&parser, 0U, nullptr) ==
 					 UART_FRAME_RESULT_ERROR);
 }
 
 static void test_decoder_decodes_each_command(void)
 {
 	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
-	decoded_device_message_t decoded;
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
 	size_t payload_length;
 
@@ -211,45 +237,45 @@ static void test_decoder_decodes_each_command(void)
 	protobuf.command.set_max_temp.value = 32767;
 	payload_length = encode_command(&protobuf, payload);
 	TEST_ASSERT_TRUE(payload_length > 0U);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_SET_MAX_TEMP);
-	TEST_ASSERT_TRUE(decoded.value.temperature == 32767);
+	auto result = decode_device_message(payload, payload_length);
+	const auto *maximum = decoded_value<SetMaximumTemperature>(result);
+	TEST_ASSERT_NOT_NULL(maximum);
+	TEST_ASSERT_TRUE(maximum->temperature == 32767);
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_min_temp_tag;
 	protobuf.command.set_min_temp.value = -32768;
 	payload_length = encode_command(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_SET_MIN_TEMP);
-	TEST_ASSERT_TRUE(decoded.value.temperature == -32768);
+	result = decode_device_message(payload, payload_length);
+	const auto *minimum = decoded_value<SetMinimumTemperature>(result);
+	TEST_ASSERT_NOT_NULL(minimum);
+	TEST_ASSERT_TRUE(minimum->temperature == -32768);
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_current_time_tag;
 	protobuf.command.set_current_time.value_ms = UINT64_C(1721234567890);
 	payload_length = encode_command(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_SET_CURRENT_TIME);
-	TEST_ASSERT_TRUE(decoded.value.current_time_ms == UINT64_C(1721234567890));
+	result = decode_device_message(payload, payload_length);
+	const auto *current_time = decoded_value<SetCurrentTime>(result);
+	TEST_ASSERT_NOT_NULL(current_time);
+	TEST_ASSERT_TRUE(
+		current_time->time_ms == UINT64_C(1721234567890));
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_temperature_unit_tag;
 	protobuf.command.set_temperature_unit.unit =
 		device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT;
 	payload_length = encode_command(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_SET_TEMPERATURE_UNIT);
-	TEST_ASSERT_TRUE(decoded.value.temperature_unit ==
-					 DEVICE_TEMPERATURE_UNIT_FAHRENHEIT);
+	result = decode_device_message(payload, payload_length);
+	const auto *unit = decoded_value<SetTemperatureUnit>(result);
+	TEST_ASSERT_NOT_NULL(unit);
+	TEST_ASSERT_TRUE(
+		unit->unit == DEVICE_TEMPERATURE_UNIT_FAHRENHEIT);
 }
 
 static void test_decoder_decodes_ble_connection_state(void)
 {
 	device_DeviceMessage protobuf = device_DeviceMessage_init_zero;
-	decoded_device_message_t decoded;
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
 	size_t payload_length;
 
@@ -258,82 +284,90 @@ static void test_decoder_decodes_ble_connection_state(void)
 		device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTING;
 	payload_length = encode_message(&protobuf, payload);
 	TEST_ASSERT_TRUE(payload_length > 0U);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
-	TEST_ASSERT_TRUE(decoded.value.ble_connection_state == BLE_CONNECTION_STATE_CONNECTING);
+	auto result = decode_device_message(payload, payload_length);
+	auto *connection =
+		decoded_value<BleConnectionStateChanged>(result);
+	TEST_ASSERT_NOT_NULL(connection);
+	TEST_ASSERT_TRUE(connection->state == BLE_CONNECTION_STATE_CONNECTING);
 
 	protobuf.payload.bridge_status.ble_connection_state =
 		device_BleConnectionState_BLE_CONNECTION_STATE_CONNECTED;
 	payload_length = encode_message(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
-	TEST_ASSERT_TRUE(decoded.value.ble_connection_state == BLE_CONNECTION_STATE_CONNECTED);
+	result = decode_device_message(payload, payload_length);
+	connection = decoded_value<BleConnectionStateChanged>(result);
+	TEST_ASSERT_NOT_NULL(connection);
+	TEST_ASSERT_TRUE(connection->state == BLE_CONNECTION_STATE_CONNECTED);
 
 	protobuf.payload.bridge_status.ble_connection_state =
 		device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTING;
 	payload_length = encode_message(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
-	TEST_ASSERT_TRUE(decoded.value.ble_connection_state ==
-					 BLE_CONNECTION_STATE_DISCONNECTING);
+	result = decode_device_message(payload, payload_length);
+	connection = decoded_value<BleConnectionStateChanged>(result);
+	TEST_ASSERT_NOT_NULL(connection);
+	TEST_ASSERT_TRUE(
+		connection->state == BLE_CONNECTION_STATE_DISCONNECTING);
 
 	protobuf.payload.bridge_status.ble_connection_state =
 		device_BleConnectionState_BLE_CONNECTION_STATE_DISCONNECTED;
 	payload_length = encode_message(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_OK);
-	TEST_ASSERT_TRUE(decoded.type == DEVICE_MESSAGE_BLE_CONNECTION_STATE);
-	TEST_ASSERT_TRUE(decoded.value.ble_connection_state ==
-					 BLE_CONNECTION_STATE_DISCONNECTED);
+	result = decode_device_message(payload, payload_length);
+	connection = decoded_value<BleConnectionStateChanged>(result);
+	TEST_ASSERT_NOT_NULL(connection);
+	TEST_ASSERT_TRUE(
+		connection->state == BLE_CONNECTION_STATE_DISCONNECTED);
 }
 
 static void test_decoder_rejects_out_of_range_temperatures(void)
 {
 	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
-	decoded_device_message_t decoded;
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
 	size_t payload_length;
 
 	protobuf.which_command = device_DeviceCommand_set_max_temp_tag;
 	protobuf.command.set_max_temp.value = 32768;
 	payload_length = encode_command(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE);
+	auto result = decode_device_message(payload, payload_length);
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(result.error() == DecodeError::value_out_of_range);
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_min_temp_tag;
 	protobuf.command.set_min_temp.value = -32769;
 	payload_length = encode_command(&protobuf, payload);
-	TEST_ASSERT_TRUE(device_message_decode(payload, (uint16_t)payload_length, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE);
+	result = decode_device_message(payload, payload_length);
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(result.error() == DecodeError::value_out_of_range);
 }
 
 static void test_decoder_rejects_invalid_payloads(void)
 {
 	const uint8_t malformed[] = {0xFFU};
 	const uint8_t unknown_field_only[] = {0x20U, 0x01U};
-	decoded_device_message_t decoded;
 
-	TEST_ASSERT_TRUE(device_message_decode(NULL, 1U, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_INVALID_ARGUMENT);
-	TEST_ASSERT_TRUE(device_message_decode(malformed, 0U, &decoded) ==
-					 DEVICE_MESSAGE_DECODE_INVALID_ARGUMENT);
-	TEST_ASSERT_TRUE(device_message_decode(malformed, sizeof(malformed), NULL) ==
-					 DEVICE_MESSAGE_DECODE_INVALID_ARGUMENT);
-	TEST_ASSERT_TRUE(device_message_decode(malformed, sizeof(malformed), &decoded) ==
-					 DEVICE_MESSAGE_DECODE_INVALID_PROTOBUF);
-	TEST_ASSERT_TRUE(device_message_decode(unknown_field_only, sizeof(unknown_field_only),
-						 &decoded) == DEVICE_MESSAGE_DECODE_MISSING_PAYLOAD);
+	auto result = decode_device_message(nullptr, 1U);
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(result.error() == DecodeError::invalid_argument);
+
+	result = decode_device_message(malformed, 0U);
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(result.error() == DecodeError::invalid_argument);
+
+	result = decode_device_message(malformed, sizeof(malformed));
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(result.error() == DecodeError::invalid_protobuf);
+
+	result = decode_device_message(
+		unknown_field_only,
+		sizeof(unknown_field_only));
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(result.error() == DecodeError::missing_payload);
 }
 
 static void test_receiver_initializes_and_accepts_bytes(void)
 {
 	uart_command_receiver_t receiver;
 
-	memset(&receiver, 0xA5, sizeof(receiver));
+	std::memset(&receiver, 0xA5, sizeof(receiver));
 	uart_command_receiver_init(&receiver);
 	TEST_ASSERT_TRUE(receiver.rx.head == receiver.rx.tail);
 	TEST_ASSERT_TRUE(receiver.stats.rx_byte_count == 0U);
@@ -369,7 +403,7 @@ static void test_receiver_applies_framed_commands_end_to_end(void)
 	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
 	uart_command_receiver_t receiver;
 	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
-	uint8_t frame[TEST_FRAME_MAX_SIZE];
+	uint8_t frame[test_frame_max_size];
 	size_t payload_length;
 	size_t frame_length;
 
@@ -384,7 +418,7 @@ static void test_receiver_applies_framed_commands_end_to_end(void)
 	TEST_ASSERT_TRUE(receiver.values.max_temp == 255);
 	TEST_ASSERT_TRUE(receiver.values.max_temp_updated);
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_min_temp_tag;
 	protobuf.command.set_min_temp.value = -55;
 	payload_length = encode_command(&protobuf, payload);
@@ -394,7 +428,7 @@ static void test_receiver_applies_framed_commands_end_to_end(void)
 	TEST_ASSERT_TRUE(receiver.values.min_temp == -55);
 	TEST_ASSERT_TRUE(receiver.values.min_temp_updated);
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_current_time_tag;
 	protobuf.command.set_current_time.value_ms = UINT64_C(9876543210);
 	payload_length = encode_command(&protobuf, payload);
@@ -404,7 +438,7 @@ static void test_receiver_applies_framed_commands_end_to_end(void)
 	TEST_ASSERT_TRUE(receiver.values.current_time_ms == UINT64_C(9876543210));
 	TEST_ASSERT_TRUE(receiver.values.current_time_updated);
 
-	protobuf = (device_DeviceCommand)device_DeviceCommand_init_zero;
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_temperature_unit_tag;
 	protobuf.command.set_temperature_unit.unit =
 		device_TemperatureUnit_TEMPERATURE_UNIT_FAHRENHEIT;
@@ -438,7 +472,7 @@ static void test_receiver_counts_frame_and_protobuf_errors(void)
 {
 	const uint8_t invalid_protobuf[] = {0xFFU};
 	uart_command_receiver_t receiver;
-	uint8_t frame[TEST_FRAME_MAX_SIZE];
+	uint8_t frame[test_frame_max_size];
 	size_t frame_length;
 
 	uart_command_receiver_init(&receiver);

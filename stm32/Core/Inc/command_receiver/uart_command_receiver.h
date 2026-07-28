@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "command_receiver/device_message_decoder.h"
+#include "command_receiver/device_types.h"
 #include "command_receiver/uart_frame.h"
 
 #define UART_COMMAND_RECEIVER_RX_CAPACITY 128U

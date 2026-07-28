@@ -56,9 +56,9 @@ function(add_climateclock_test target)
 endfunction()
 
 add_climateclock_test(command_receiver_tests
-	test_command_receiver.c
+	test_command_receiver.cpp
 	"${STM32}/Core/Src/utils/byte_ring_buffer.cpp"
-	"${STM32}/Core/Src/command_receiver/device_message_decoder.c"
+	"${STM32}/Core/Src/command_receiver/device_message_decoder.cpp"
 	"${STM32}/Core/Src/command_receiver/uart_command_receiver.cpp")
 target_link_libraries(command_receiver_tests PRIVATE
 	device_protocol uart_framing)

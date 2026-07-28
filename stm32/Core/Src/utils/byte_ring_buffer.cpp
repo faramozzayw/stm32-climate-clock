@@ -2,6 +2,18 @@
 
 namespace climate_clock
 {
+ByteRingBuffer::ByteRingBuffer(
+	std::uint8_t *storage,
+	std::size_t capacity,
+	volatile std::uint16_t &head,
+	volatile std::uint16_t &tail)
+	: storage_(storage),
+	  capacity_(capacity),
+	  head_(head),
+	  tail_(tail)
+{
+}
+
 void ByteRingBuffer::reset()
 {
 	head_ = 0U;
