@@ -1,6 +1,6 @@
 # ClimateClock
 
-ClimateClock is a connected temperature clock and threshold controller built
+ClimateClock is a connected environmental clock and threshold controller built
 from an STM32 controller, an ESP32 Bluetooth bridge, and a cross-platform
 Flutter application.
 
@@ -16,14 +16,14 @@ leaves its configured range.
 ```mermaid
 flowchart LR
     A["Flutter app"] <-->|"BLE / Nordic UART Service<br/>Protocol Buffers"| B["ESP32 bridge"]
-    B <-->|"115200 baud UART<br/>framing + CRC-16"| C["STM32L073 controller"]
-    C --> D["16×2 I²C LCD"]
-    C <--> E["DS3231 RTC"]
-    C <--> J["BME280 / BMP280 sensor"]
-    C <--> F["AT24C256 EEPROM"]
-    C --> G["RGB temperature indicator"]
-    C --> H["BLE connection LED"]
-    C -->|"USART2 / printf"| I["Serial debug console"]
+    B <-->|"ESP32 UART2 ↔ STM32 USART1<br/>115200 baud / framing + CRC-16"| C["STM32L073 controller"]
+    C -->|"I²C1 / PCF8574"| D["16×2 LCD"]
+    C <-->|"I²C1"| E["DS3231 RTC"]
+    C <-->|"I²C1"| J["BME280 / BMP280 sensor"]
+    C <-->|"I²C1"| F["AT24C256 EEPROM"]
+    C -->|"TIM2 PWM"| G["RGB temperature indicator"]
+    C -->|"TIM2 PWM"| H["BLE connection LED"]
+    C -->|"USART2 / 115200 baud / printf"| I["Serial debug console"]
 ```
 
 Commands travel from the Flutter app to the ESP32 over Bluetooth Low Energy.
@@ -52,7 +52,8 @@ allowing the app to update its UI and environmental alerts.
 - **BME280 / BMP280** environmental sensor as the temperature source, with
   pressure support and humidity support when a BME280 is fitted
 - **LCD1602 / HD44780-compatible 16×2 display** through a PCF8574 I²C backpack
-- **AT24C256 EEPROM** for persistent temperature and humidity limits
+- **AT24C256 EEPROM** for persistent temperature limits, humidity limits, and
+  the selected temperature unit
 - **HW-479 RGB LED module** for below-range and above-range indication
 - A separate PWM-driven LED for BLE connection state
 
@@ -85,15 +86,20 @@ allowing the app to update its UI and environmental alerts.
 - Python generation scripts for nanopb and Dart bindings
 - **just** for common formatting, generation, Android setup, and APK tasks
 - **clang-format** for custom C/C++ sources
+- **GitHub Actions** for Flutter analysis and tests plus host-side C/C++ tests
 
 ## Main features
 
 - Displays UTC time, date, temperature, and available humidity without clearing
   the LCD on each update, avoiding visible flicker
 - Configurable minimum and maximum temperature and humidity limits
-- Persistent limits with safe defaults when EEPROM is unavailable
+- Persistent limits and temperature unit with safe defaults when EEPROM is
+  unavailable
 - Celsius and Fahrenheit display modes while storing protocol values in tenths
   of a degree Celsius
+- Device-authoritative settings synchronization: the app adopts the unit stored
+  by the STM32 when it connects and sends changes only after an explicit user
+  selection
 - Blue indication below the minimum, red indication at or above the maximum
 - Live BLE telemetry and local notifications when temperature or humidity
   crosses a limit
@@ -112,6 +118,7 @@ allowing the app to update its UI and environmental alerts.
 | [`shared/uart_framing/`](shared/uart_framing/) | Portable UART framing and CRC implementation shared by both firmwares |
 | [`third_party/nanopb/`](third_party/nanopb/) | nanopb Git submodule |
 | [`third_party/unity/`](third_party/unity/) | ThrowTheSwitch Unity test framework Git submodule |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Flutter and host C/C++ continuous integration |
 | [`justfile`](justfile) | Repository development commands |
 
 ## Communication protocol
@@ -121,9 +128,15 @@ envelope containing:
 
 - Commands to set temperature and humidity limits, current time, and display
   unit
-- Environmental telemetry split into live measurements and device settings,
-  keeping each BLE notification within the default payload size
+- Live measurement telemetry containing temperature and optional humidity
+- Device settings telemetry containing persisted limits and the selected
+  temperature unit
 - ESP32 bridge connection-state reports
+
+Measurement and settings telemetry are separate so each message fits within the
+default BLE notification payload. When notifications become ready, the STM32
+sends its settings first; the Flutter app adopts them instead of overwriting the
+stored unit with its local default.
 
 BLE carries serialized protobuf messages directly. UART is a byte stream, so
 the ESP32 and STM32 wrap each protobuf payload in:
@@ -213,8 +226,20 @@ ctest --test-dir stm32/Tests/.build/cmake --output-on-failure
 ```
 
 The suite tests UART framing and recovery, protobuf decoding, the receive ring
-buffer, telemetry, calendar and temperature utilities, HAL UART adaptation,
-screen formatting, and flicker-free LCD row updates.
+buffer, BMX280 measurement and compensation, EEPROM settings, telemetry,
+byte and temperature utilities, HAL UART adaptation, screen formatting, and
+flicker-free LCD row updates.
+
+Analyze and test the Flutter application:
+
+```sh
+cd app
+flutter analyze
+flutter test
+```
+
+GitHub Actions runs both the Flutter checks and the host C/C++ suite for pushes
+and pull requests.
 
 Format the repository-owned embedded sources:
 
