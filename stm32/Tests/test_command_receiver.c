@@ -335,7 +335,7 @@ static void test_receiver_initializes_and_accepts_bytes(void)
 
 	memset(&receiver, 0xA5, sizeof(receiver));
 	uart_command_receiver_init(&receiver);
-	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&receiver.rx.bytes));
+	TEST_ASSERT_TRUE(receiver.rx.head == receiver.rx.tail);
 	TEST_ASSERT_TRUE(receiver.stats.rx_byte_count == 0U);
 	TEST_ASSERT_TRUE(!receiver.values.min_temp_updated);
 	TEST_ASSERT_TRUE(!receiver.values.max_temp_updated);
@@ -361,7 +361,7 @@ static void test_receiver_tracks_overflow(void)
 	TEST_ASSERT_TRUE(receiver.stats.rx_byte_count == UART_COMMAND_RECEIVER_RX_CAPACITY);
 	TEST_ASSERT_TRUE(receiver.stats.rx_overflow_count == 1U);
 	uart_command_receiver_poll(&receiver);
-	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&receiver.rx.bytes));
+	TEST_ASSERT_TRUE(receiver.rx.head == receiver.rx.tail);
 }
 
 static void test_receiver_applies_framed_commands_end_to_end(void)

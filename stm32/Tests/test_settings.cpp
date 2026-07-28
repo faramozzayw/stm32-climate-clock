@@ -3,8 +3,14 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "app_settings.h"
+extern "C"
+{
 #include "unity.h"
+}
+
+#include "app/settings.hpp"
+
+using climate_clock::Settings;
 
 #define TEST_EEPROM_SIZE 5U
 
@@ -71,26 +77,20 @@ void tearDown(void)
 {
 }
 
-static void test_app_settings_restore_saved_values(void)
+static void test_settings_restore_saved_values(void)
 {
+	Settings settings{eeprom};
 	int16_t min_temp = 0;
 	int16_t max_temp = 0;
 	temperature_unit_t unit = TEMPERATURE_UNIT_CELSIUS;
 
-	TEST_ASSERT_TRUE(
-		app_settings_save_min_temperature(&eeprom, -123) == AT24C256_OK);
-	TEST_ASSERT_TRUE(
-		app_settings_save_max_temperature(&eeprom, 456) == AT24C256_OK);
-	TEST_ASSERT_TRUE(
-		app_settings_save_temperature_unit(
-			&eeprom,
-			TEMPERATURE_UNIT_FAHRENHEIT) == AT24C256_OK);
+	TEST_ASSERT_EQUAL(AT24C256_OK, settings.save_min_temperature(-123));
+	TEST_ASSERT_EQUAL(AT24C256_OK, settings.save_max_temperature(456));
+	TEST_ASSERT_EQUAL(
+		AT24C256_OK,
+		settings.save_temperature_unit(TEMPERATURE_UNIT_FAHRENHEIT));
 
-	TEST_ASSERT_TRUE(app_settings_load(
-		&eeprom,
-		&min_temp,
-		&max_temp,
-		&unit));
+	TEST_ASSERT_TRUE(settings.load(min_temp, max_temp, unit));
 	TEST_ASSERT_TRUE(min_temp == -123);
 	TEST_ASSERT_TRUE(max_temp == 456);
 	TEST_ASSERT_TRUE(unit == TEMPERATURE_UNIT_FAHRENHEIT);
@@ -98,20 +98,15 @@ static void test_app_settings_restore_saved_values(void)
 
 static void test_legacy_settings_keep_default_unit(void)
 {
+	Settings settings{eeprom};
 	int16_t min_temp = 0;
 	int16_t max_temp = 0;
 	temperature_unit_t unit = TEMPERATURE_UNIT_CELSIUS;
 
-	TEST_ASSERT_TRUE(
-		app_settings_save_min_temperature(&eeprom, 100) == AT24C256_OK);
-	TEST_ASSERT_TRUE(
-		app_settings_save_max_temperature(&eeprom, 300) == AT24C256_OK);
+	TEST_ASSERT_EQUAL(AT24C256_OK, settings.save_min_temperature(100));
+	TEST_ASSERT_EQUAL(AT24C256_OK, settings.save_max_temperature(300));
 
-	TEST_ASSERT_TRUE(app_settings_load(
-		&eeprom,
-		&min_temp,
-		&max_temp,
-		&unit));
+	TEST_ASSERT_TRUE(settings.load(min_temp, max_temp, unit));
 	TEST_ASSERT_TRUE(min_temp == 100);
 	TEST_ASSERT_TRUE(max_temp == 300);
 	TEST_ASSERT_TRUE(unit == TEMPERATURE_UNIT_CELSIUS);
@@ -119,24 +114,21 @@ static void test_legacy_settings_keep_default_unit(void)
 
 static void test_invalid_stored_unit_keeps_default(void)
 {
+	Settings settings{eeprom};
 	int16_t min_temp = 100;
 	int16_t max_temp = 300;
 	temperature_unit_t unit = TEMPERATURE_UNIT_CELSIUS;
 
 	eeprom_storage[4] = 0x7FU;
 
-	TEST_ASSERT_TRUE(!app_settings_load(
-		&eeprom,
-		&min_temp,
-		&max_temp,
-		&unit));
+	TEST_ASSERT_FALSE(settings.load(min_temp, max_temp, unit));
 	TEST_ASSERT_TRUE(unit == TEMPERATURE_UNIT_CELSIUS);
 }
 
 int main(void)
 {
 	UNITY_BEGIN();
-	RUN_TEST(test_app_settings_restore_saved_values);
+	RUN_TEST(test_settings_restore_saved_values);
 	RUN_TEST(test_legacy_settings_keep_default_unit);
 	RUN_TEST(test_invalid_stored_unit_keeps_default);
 	return UNITY_END();

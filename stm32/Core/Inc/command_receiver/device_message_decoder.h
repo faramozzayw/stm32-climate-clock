@@ -51,9 +51,18 @@ typedef enum
 	DEVICE_MESSAGE_DECODE_VALUE_OUT_OF_RANGE,
 } device_message_decode_result_t;
 
-device_message_decode_result_t device_message_decode(
-	const uint8_t *payload,
-	uint16_t payload_length,
-	decoded_device_message_t *message);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	device_message_decode_result_t device_message_decode(
+		const uint8_t *payload,
+		uint16_t payload_length,
+		decoded_device_message_t *message);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_DEVICE_MESSAGE_DECODER_H_ */

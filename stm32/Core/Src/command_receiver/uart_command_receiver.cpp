@@ -3,18 +3,26 @@
 #include <stdio.h>
 
 #include "command_receiver/device_message_decoder.h"
+#include "utils/byte_ring_buffer.hpp"
+
+using climate_clock::ByteRingBuffer;
 
 static void process_rx_byte(uart_command_receiver_t *commands, uint8_t byte);
 static void apply_decoded_message(uart_command_receiver_t *commands,
 	const decoded_device_message_t *message);
 static void print_temperature(const char *command, int16_t temperature);
 
+static ByteRingBuffer rx_buffer(uart_command_receiver_t &commands)
+{
+	return ByteRingBuffer{
+		commands.rx.storage,
+		commands.rx.head,
+		commands.rx.tail};
+}
+
 void uart_command_receiver_init(uart_command_receiver_t *commands)
 {
-	byte_ring_buffer_init(
-		&commands->rx.bytes,
-		commands->rx.storage,
-		sizeof(commands->rx.storage));
+	rx_buffer(*commands).reset();
 	uart_frame_parser_init(&commands->frame_parser);
 
 	commands->values.min_temp_updated = false;
@@ -38,7 +46,7 @@ void uart_command_receiver_push_byte(
 	uint8_t byte)
 {
 	commands->stats.rx_byte_count++;
-	if (!byte_ring_buffer_push(&commands->rx.bytes, byte))
+	if (!rx_buffer(*commands).push(byte))
 	{
 		commands->stats.rx_overflow_count++;
 	}
@@ -50,7 +58,7 @@ void uart_command_receiver_poll(uart_command_receiver_t *commands)
 	{
 		uint8_t byte;
 
-		if (!byte_ring_buffer_pop(&commands->rx.bytes, &byte))
+		if (!rx_buffer(*commands).pop(byte))
 		{
 			break;
 		}

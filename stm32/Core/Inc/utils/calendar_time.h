@@ -15,7 +15,12 @@ typedef struct
 	uint16_t year;
 } calendar_time_t;
 
-/**
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	/**
  * @brief Convert Unix epoch milliseconds to a UTC calendar time.
  *
  * The supported calendar range is 2000-01-01 through 2099-12-31. Weekdays use
@@ -25,6 +30,10 @@ typedef struct
  * @param time Destination calendar value.
  * @return true when the input is in the supported range; otherwise false.
  */
-bool calendar_time_from_unix_ms(uint64_t epoch_ms, calendar_time_t *time);
+	bool calendar_time_from_unix_ms(uint64_t epoch_ms, calendar_time_t *time);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_UTILS_CALENDAR_TIME_H_ */

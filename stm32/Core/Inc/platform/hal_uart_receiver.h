@@ -16,17 +16,26 @@ typedef struct
 	uint32_t last_reported_rearm_error_count;
 } hal_uart_receiver_t;
 
-bool hal_uart_receiver_init(
-	hal_uart_receiver_t *adapter,
-	UART_HandleTypeDef *uart,
-	uart_command_receiver_t *receiver);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-bool hal_uart_receiver_start(hal_uart_receiver_t *adapter);
+	bool hal_uart_receiver_init(
+		hal_uart_receiver_t *adapter,
+		UART_HandleTypeDef *uart,
+		uart_command_receiver_t *receiver);
 
-void hal_uart_receiver_on_complete(
-	hal_uart_receiver_t *adapter,
-	UART_HandleTypeDef *completed_uart);
+	bool hal_uart_receiver_start(hal_uart_receiver_t *adapter);
 
-void hal_uart_receiver_report_errors(hal_uart_receiver_t *adapter);
+	void hal_uart_receiver_on_complete(
+		hal_uart_receiver_t *adapter,
+		UART_HandleTypeDef *completed_uart);
+
+	void hal_uart_receiver_report_errors(hal_uart_receiver_t *adapter);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_PLATFORM_HAL_UART_RECEIVER_H_ */

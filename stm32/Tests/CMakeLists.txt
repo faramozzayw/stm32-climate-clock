@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
-project(climateclock_host_tests LANGUAGES C)
+project(climateclock_host_tests LANGUAGES C CXX)
 
 include(CTest)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
 set(STM32 "${CMAKE_CURRENT_LIST_DIR}/..")
@@ -53,31 +57,34 @@ endfunction()
 
 add_climateclock_test(command_receiver_tests
 	test_command_receiver.c
-	"${STM32}/Core/Src/utils/byte_ring_buffer.c"
+	"${STM32}/Core/Src/utils/byte_ring_buffer.cpp"
 	"${STM32}/Core/Src/command_receiver/device_message_decoder.c"
-	"${STM32}/Core/Src/command_receiver/uart_command_receiver.c")
+	"${STM32}/Core/Src/command_receiver/uart_command_receiver.cpp")
 target_link_libraries(command_receiver_tests PRIVATE
 	device_protocol uart_framing)
+
+add_climateclock_test(byte_ring_buffer_tests
+	test_byte_ring_buffer.cpp
+	"${STM32}/Core/Src/utils/byte_ring_buffer.cpp")
 
 add_climateclock_test(pure_utils_tests
 	test_pure_utils.c
 	"${STM32}/Core/Src/utils/temperature.c"
 	"${STM32}/Core/Src/utils/byte_codec.c"
-	"${STM32}/Core/Src/utils/byte_ring_buffer.c"
 	"${STM32}/Core/Src/utils/calendar_time.c")
 target_link_libraries(pure_utils_tests PRIVATE ${MATH_LIBRARY})
 
 add_climateclock_test(telemetry_tests
-	test_telemetry.c
-	"${STM32}/Core/Src/telemetry.c")
+	test_telemetry.cpp
+	"${STM32}/Core/Src/telemetry.cpp")
 target_link_libraries(telemetry_tests PRIVATE
 	device_protocol uart_framing)
 
-add_climateclock_test(app_settings_tests
-	test_app_settings.c
-	"${STM32}/Core/Src/app_settings.c"
+add_climateclock_test(settings_tests
+	test_settings.cpp
+	"${STM32}/Core/Src/app/settings.cpp"
 	"${STM32}/Core/Src/utils/byte_codec.c")
-target_include_directories(app_settings_tests BEFORE PRIVATE fakes)
+target_include_directories(settings_tests BEFORE PRIVATE fakes)
 
 add_climateclock_test(hal_uart_receiver_tests
 	test_hal_uart_receiver.c
@@ -85,11 +92,11 @@ add_climateclock_test(hal_uart_receiver_tests
 target_include_directories(hal_uart_receiver_tests BEFORE PRIVATE fakes)
 
 add_climateclock_test(screen_tests
-	test_screen.c
-	"${STM32}/Core/Src/app/screen.c"
+	test_screen.cpp
+	"${STM32}/Core/Src/app/screen.cpp"
 	"${STM32}/Core/Src/utils/temperature.c")
 target_include_directories(screen_tests BEFORE PRIVATE
-	fakes "${STM32}/Core/Src")
+	fakes)
 target_link_libraries(screen_tests PRIVATE ${MATH_LIBRARY})
 
 add_climateclock_test(lcd1602_tests

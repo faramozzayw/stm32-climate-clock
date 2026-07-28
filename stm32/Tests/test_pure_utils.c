@@ -5,7 +5,6 @@
 
 #include "unity.h"
 #include "utils/byte_codec.h"
-#include "utils/byte_ring_buffer.h"
 #include "utils/calendar_time.h"
 #include "utils/temperature.h"
 
@@ -116,68 +115,6 @@ static void test_calendar_time_rejects_unsupported_range(void)
 	TEST_ASSERT_TRUE(!calendar_time_from_unix_ms(946684800000ULL, NULL));
 }
 
-static void test_byte_ring_buffer_validates_initialization(void)
-{
-	byte_ring_buffer_t buffer = {0};
-	uint8_t storage[2];
-	uint8_t byte;
-
-	TEST_ASSERT_TRUE(!byte_ring_buffer_init(NULL, storage, sizeof(storage)));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_init(&buffer, NULL, sizeof(storage)));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_init(&buffer, storage, 1U));
-	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_push(&buffer, 1U));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_pop(&buffer, &byte));
-}
-
-static void test_byte_ring_buffer_preserves_fifo_order(void)
-{
-	byte_ring_buffer_t buffer;
-	uint8_t storage[4];
-	uint8_t byte;
-
-	TEST_ASSERT_TRUE(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
-	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 10U));
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 20U));
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 10U);
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 20U);
-	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_pop(&buffer, NULL));
-}
-
-static void test_byte_ring_buffer_rejects_full_and_wraps(void)
-{
-	byte_ring_buffer_t buffer;
-	uint8_t storage[4];
-	uint8_t byte;
-
-	TEST_ASSERT_TRUE(byte_ring_buffer_init(&buffer, storage, sizeof(storage)));
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 1U));
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 2U));
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 3U));
-	TEST_ASSERT_TRUE(!byte_ring_buffer_push(&buffer, 4U));
-
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 1U);
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 4U));
-
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 2U);
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 3U);
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 4U);
-	TEST_ASSERT_TRUE(byte_ring_buffer_is_empty(&buffer));
-
-	TEST_ASSERT_TRUE(byte_ring_buffer_push(&buffer, 5U));
-	TEST_ASSERT_TRUE(byte_ring_buffer_pop(&buffer, &byte));
-	TEST_ASSERT_TRUE(byte == 5U);
-}
-
 void setUp(void)
 {
 }
@@ -198,8 +135,5 @@ int main(void)
 	RUN_TEST(test_calendar_time_converts_unix_epoch);
 	RUN_TEST(test_calendar_time_handles_leap_day_and_milliseconds);
 	RUN_TEST(test_calendar_time_rejects_unsupported_range);
-	RUN_TEST(test_byte_ring_buffer_validates_initialization);
-	RUN_TEST(test_byte_ring_buffer_preserves_fifo_order);
-	RUN_TEST(test_byte_ring_buffer_rejects_full_and_wraps);
 	return UNITY_END();
 }

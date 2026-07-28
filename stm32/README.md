@@ -25,7 +25,8 @@ git submodule update --init --recursive
 Configure, build, and run the suite from the repository root:
 
 ```console
-cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja -DCMAKE_C_COMPILER=gcc
+cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
 cmake --build stm32/Tests/.build/cmake
 ctest --test-dir stm32/Tests/.build/cmake --output-on-failure
 ```

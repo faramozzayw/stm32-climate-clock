@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "utils/byte_ring_buffer.h"
 #include "command_receiver/device_message_decoder.h"
 #include "command_receiver/uart_frame.h"
 
@@ -12,7 +11,8 @@
 typedef struct
 {
 	uint8_t storage[UART_COMMAND_RECEIVER_RX_CAPACITY];
-	byte_ring_buffer_t bytes;
+	volatile uint16_t head;
+	volatile uint16_t tail;
 } uart_command_receiver_rx_t;
 
 typedef struct
@@ -47,10 +47,19 @@ typedef struct
 	uart_command_receiver_values_t values;
 } uart_command_receiver_t;
 
-void uart_command_receiver_init(uart_command_receiver_t *receiver);
-void uart_command_receiver_push_byte(
-	uart_command_receiver_t *receiver,
-	uint8_t byte);
-void uart_command_receiver_poll(uart_command_receiver_t *receiver);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	void uart_command_receiver_init(uart_command_receiver_t *receiver);
+	void uart_command_receiver_push_byte(
+		uart_command_receiver_t *receiver,
+		uint8_t byte);
+	void uart_command_receiver_poll(uart_command_receiver_t *receiver);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_UART_COMMAND_RECEIVER_H_ */

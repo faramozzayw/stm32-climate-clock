@@ -33,16 +33,25 @@ typedef struct
 	uint32_t timeout_ms;
 } at24c256_t;
 
-AT24C256_Status at24c256_init(at24c256_t *eeprom, I2C_HandleTypeDef *i2c, uint8_t address, uint32_t timeout_ms);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-AT24C256_Status at24c256_is_ready(const at24c256_t *eeprom);
+	AT24C256_Status at24c256_init(at24c256_t *eeprom, I2C_HandleTypeDef *i2c, uint8_t address, uint32_t timeout_ms);
 
-AT24C256_Status at24c256_read(const at24c256_t *eeprom, uint16_t memory_address, uint8_t *data, size_t length);
+	AT24C256_Status at24c256_is_ready(const at24c256_t *eeprom);
 
-AT24C256_Status at24c256_write(const at24c256_t *eeprom, uint16_t memory_address, const uint8_t *data, size_t length);
+	AT24C256_Status at24c256_read(const at24c256_t *eeprom, uint16_t memory_address, uint8_t *data, size_t length);
 
-AT24C256_Status at24c256_read_byte(const at24c256_t *eeprom, uint16_t memory_address, uint8_t *value);
+	AT24C256_Status at24c256_write(const at24c256_t *eeprom, uint16_t memory_address, const uint8_t *data, size_t length);
 
-AT24C256_Status at24c256_write_byte(const at24c256_t *eeprom, uint16_t memory_address, uint8_t value);
+	AT24C256_Status at24c256_read_byte(const at24c256_t *eeprom, uint16_t memory_address, uint8_t *value);
+
+	AT24C256_Status at24c256_write_byte(const at24c256_t *eeprom, uint16_t memory_address, uint8_t value);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_DRIVERS_AT24C256_H_ */

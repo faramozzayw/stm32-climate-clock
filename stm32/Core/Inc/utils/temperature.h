@@ -14,14 +14,19 @@ typedef enum
 #define TEMPERATURE_UNIT_CELSIUS_SYMBOL 'C'
 #define TEMPERATURE_UNIT_FAHRENHEIT_SYMBOL 'F'
 
-int16_t tempToFixed(float temp);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/**
+	int16_t tempToFixed(float temp);
+
+	/**
  * @brief Convert tenths of a degree Celsius to tenths of a degree Fahrenheit.
  */
-int16_t celsius_to_fahrenheit_fixed(int16_t celsius_tenths);
+	int16_t celsius_to_fahrenheit_fixed(int16_t celsius_tenths);
 
-/**
+	/**
  * @brief Format a signed fixed-point temperature with one decimal place.
  *
  * @param buffer Destination for the null-terminated string.
@@ -30,10 +35,14 @@ int16_t celsius_to_fahrenheit_fixed(int16_t celsius_tenths);
  * @param unit Unit symbol appended to the string.
  * @return true when the complete string was written; otherwise false.
  */
-bool fixed_temperature_to_string(
-	char *buffer,
-	size_t buffer_size,
-	int16_t temperature_tenths,
-	char unit);
+	bool fixed_temperature_to_string(
+		char *buffer,
+		size_t buffer_size,
+		int16_t temperature_tenths,
+		char unit);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_UTILS_TEMPERATURE_H_ */

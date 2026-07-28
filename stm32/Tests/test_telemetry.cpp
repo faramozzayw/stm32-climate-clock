@@ -2,11 +2,17 @@
 #include <stdint.h>
 #include <stdio.h>
 
+extern "C"
+{
 #include "unity.h"
+}
+
 #include "command_receiver/uart_frame.h"
 #include "device.pb.h"
 #include "pb_decode.h"
-#include "telemetry.h"
+#include "telemetry.hpp"
+
+namespace telemetry = climate_clock::telemetry;
 
 static bool decode_frame(
 	const uint8_t *frame,
@@ -14,7 +20,7 @@ static bool decode_frame(
 	device_DeviceMessage *message)
 {
 	uart_frame_parser_t parser;
-	uart_frame_view_t view = {0};
+	uart_frame_view_t view{};
 	uint16_t pos;
 
 	uart_frame_parser_init(&parser);
@@ -45,12 +51,12 @@ static bool decode_frame(
 
 static void test_telemetry_round_trips_temperature_values(void)
 {
-	uint8_t frame[TELEMETRY_FRAME_MAX_SIZE];
+	uint8_t frame[telemetry::max_frame_size];
 	uint16_t frame_length;
 	device_DeviceMessage message = device_DeviceMessage_init_zero;
 
-	TEST_ASSERT_TRUE(telemetry_encode_temperature(
-		-55, 100, 300, frame, sizeof(frame), &frame_length));
+	TEST_ASSERT_TRUE(telemetry::encode_temperature(
+		-55, 100, 300, frame, frame_length));
 	TEST_ASSERT_TRUE(frame_length <= sizeof(frame));
 	TEST_ASSERT_TRUE(decode_frame(frame, frame_length, &message));
 	TEST_ASSERT_TRUE(message.which_payload == device_DeviceMessage_telemetry_tag);
@@ -59,17 +65,13 @@ static void test_telemetry_round_trips_temperature_values(void)
 	TEST_ASSERT_TRUE(message.payload.telemetry.max_temp == 300);
 }
 
-static void test_telemetry_rejects_invalid_destinations(void)
+static void test_telemetry_rejects_small_frame_buffer(void)
 {
-	uint8_t frame[TELEMETRY_FRAME_MAX_SIZE];
+	uint8_t frame[1];
 	uint16_t frame_length;
 
-	TEST_ASSERT_TRUE(!telemetry_encode_temperature(
-		0, 100, 300, NULL, sizeof(frame), &frame_length));
-	TEST_ASSERT_TRUE(!telemetry_encode_temperature(
-		0, 100, 300, frame, sizeof(frame), NULL));
-	TEST_ASSERT_TRUE(!telemetry_encode_temperature(
-		0, 100, 300, frame, 1U, &frame_length));
+	TEST_ASSERT_FALSE(telemetry::encode_temperature(
+		0, 100, 300, frame, frame_length));
 }
 
 void setUp(void)
@@ -84,6 +86,6 @@ int main(void)
 {
 	UNITY_BEGIN();
 	RUN_TEST(test_telemetry_round_trips_temperature_values);
-	RUN_TEST(test_telemetry_rejects_invalid_destinations);
+	RUN_TEST(test_telemetry_rejects_small_frame_buffer);
 	return UNITY_END();
 }
