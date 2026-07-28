@@ -1,5 +1,6 @@
 #include "command_receiver/uart_command_receiver.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <variant>
 
@@ -11,7 +12,9 @@ using climate_clock::ByteRingBuffer;
 using climate_clock::decode_device_message;
 using climate_clock::DecodedDeviceMessage;
 using climate_clock::SetCurrentTime;
+using climate_clock::SetMaximumHumidity;
 using climate_clock::SetMaximumTemperature;
+using climate_clock::SetMinimumHumidity;
 using climate_clock::SetMinimumTemperature;
 using climate_clock::SetTemperatureUnit;
 
@@ -51,6 +54,39 @@ static void apply_message(
 	commands.values.min_temp = command.temperature;
 	commands.values.min_temp_updated = true;
 	print_temperature("SetMinTemp", commands.values.min_temp);
+}
+
+static void print_humidity(const char *command, std::uint16_t humidity)
+{
+	std::printf(
+		"[USART1] %s = %u.%u%%\r\n",
+		command,
+		static_cast<unsigned int>(humidity / 10U),
+		static_cast<unsigned int>(humidity % 10U));
+}
+
+static void apply_message(
+	uart_command_receiver_t &commands,
+	const SetMaximumHumidity &command)
+{
+	commands.values.max_humidity_tenths_percent =
+		command.humidity_tenths_percent;
+	commands.values.max_humidity_updated = true;
+	print_humidity(
+		"SetMaxHumidity",
+		commands.values.max_humidity_tenths_percent);
+}
+
+static void apply_message(
+	uart_command_receiver_t &commands,
+	const SetMinimumHumidity &command)
+{
+	commands.values.min_humidity_tenths_percent =
+		command.humidity_tenths_percent;
+	commands.values.min_humidity_updated = true;
+	print_humidity(
+		"SetMinHumidity",
+		commands.values.min_humidity_tenths_percent);
 }
 
 static void apply_message(
@@ -149,6 +185,8 @@ void uart_command_receiver_init(uart_command_receiver_t *commands)
 
 	commands->values.min_temp_updated = false;
 	commands->values.max_temp_updated = false;
+	commands->values.min_humidity_updated = false;
+	commands->values.max_humidity_updated = false;
 	commands->values.current_time_updated = false;
 	commands->values.temperature_unit = DEVICE_TEMPERATURE_UNIT_CELSIUS;
 	commands->values.temperature_unit_updated = false;

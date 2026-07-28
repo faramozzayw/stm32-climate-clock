@@ -24,10 +24,8 @@ endif()
 
 if(MSVC)
 	add_compile_options(/W4 /WX)
-	set(MATH_LIBRARY)
 else()
 	add_compile_options(-Wall -Wextra -Werror)
-	set(MATH_LIBRARY m)
 endif()
 
 add_library(unity STATIC "${UNITY}/src/unity.c")
@@ -67,12 +65,17 @@ add_climateclock_test(byte_ring_buffer_tests
 	test_byte_ring_buffer.cpp
 	"${STM32}/Core/Src/utils/byte_ring_buffer.cpp")
 
+add_climateclock_test(bmx280_tests
+	test_bmx280.cpp
+	"${STM32}/Core/Src/drivers/bmx280.cpp"
+	"${STM32}/Core/Src/utils/byte_codec.c")
+target_include_directories(bmx280_tests BEFORE PRIVATE fakes)
+
 add_climateclock_test(pure_utils_tests
 	test_pure_utils.c
 	"${STM32}/Core/Src/utils/temperature.c"
 	"${STM32}/Core/Src/utils/byte_codec.c"
 	"${STM32}/Core/Src/utils/calendar_time.c")
-target_link_libraries(pure_utils_tests PRIVATE ${MATH_LIBRARY})
 
 add_climateclock_test(telemetry_tests
 	test_telemetry.cpp
@@ -97,7 +100,6 @@ add_climateclock_test(screen_tests
 	"${STM32}/Core/Src/utils/temperature.c")
 target_include_directories(screen_tests BEFORE PRIVATE
 	fakes)
-target_link_libraries(screen_tests PRIVATE ${MATH_LIBRARY})
 
 add_climateclock_test(lcd1602_tests
 	test_lcd1602.c

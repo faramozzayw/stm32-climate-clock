@@ -21,7 +21,9 @@ using climate_clock::decode_device_message;
 using climate_clock::DecodeError;
 using climate_clock::DecodeResult;
 using climate_clock::SetCurrentTime;
+using climate_clock::SetMaximumHumidity;
 using climate_clock::SetMaximumTemperature;
+using climate_clock::SetMinimumHumidity;
 using climate_clock::SetMinimumTemperature;
 using climate_clock::SetTemperatureUnit;
 
@@ -252,6 +254,30 @@ static void test_decoder_decodes_each_command(void)
 	TEST_ASSERT_TRUE(minimum->temperature == -32768);
 
 	protobuf = device_DeviceCommand_init_zero;
+	protobuf.which_command = device_DeviceCommand_set_max_humidity_tag;
+	protobuf.command.set_max_humidity.value = 1000U;
+	payload_length = encode_command(&protobuf, payload);
+	result = decode_device_message(payload, payload_length);
+	const auto *maximum_humidity =
+		decoded_value<SetMaximumHumidity>(result);
+	TEST_ASSERT_NOT_NULL(maximum_humidity);
+	TEST_ASSERT_EQUAL_UINT16(
+		1000U,
+		maximum_humidity->humidity_tenths_percent);
+
+	protobuf = device_DeviceCommand_init_zero;
+	protobuf.which_command = device_DeviceCommand_set_min_humidity_tag;
+	protobuf.command.set_min_humidity.value = 0U;
+	payload_length = encode_command(&protobuf, payload);
+	result = decode_device_message(payload, payload_length);
+	const auto *minimum_humidity =
+		decoded_value<SetMinimumHumidity>(result);
+	TEST_ASSERT_NOT_NULL(minimum_humidity);
+	TEST_ASSERT_EQUAL_UINT16(
+		0U,
+		minimum_humidity->humidity_tenths_percent);
+
+	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_current_time_tag;
 	protobuf.command.set_current_time.value_ms = UINT64_C(1721234567890);
 	payload_length = encode_command(&protobuf, payload);
@@ -339,6 +365,21 @@ static void test_decoder_rejects_out_of_range_temperatures(void)
 	TEST_ASSERT_TRUE(result.error() == DecodeError::value_out_of_range);
 }
 
+static void test_decoder_rejects_out_of_range_humidity(void)
+{
+	device_DeviceCommand protobuf = device_DeviceCommand_init_zero;
+	uint8_t payload[UART_FRAME_MAX_PAYLOAD_SIZE];
+
+	protobuf.which_command = device_DeviceCommand_set_max_humidity_tag;
+	protobuf.command.set_max_humidity.value = 1001U;
+	const size_t payload_length = encode_command(&protobuf, payload);
+	const auto result = decode_device_message(payload, payload_length);
+
+	TEST_ASSERT_FALSE(result);
+	TEST_ASSERT_TRUE(
+		result.error() == DecodeError::value_out_of_range);
+}
+
 static void test_decoder_rejects_invalid_payloads(void)
 {
 	const uint8_t malformed[] = {0xFFU};
@@ -373,6 +414,8 @@ static void test_receiver_initializes_and_accepts_bytes(void)
 	TEST_ASSERT_TRUE(receiver.stats.rx_byte_count == 0U);
 	TEST_ASSERT_TRUE(!receiver.values.min_temp_updated);
 	TEST_ASSERT_TRUE(!receiver.values.max_temp_updated);
+	TEST_ASSERT_TRUE(!receiver.values.min_humidity_updated);
+	TEST_ASSERT_TRUE(!receiver.values.max_humidity_updated);
 	TEST_ASSERT_TRUE(!receiver.values.current_time_updated);
 	TEST_ASSERT_TRUE(receiver.values.temperature_unit == DEVICE_TEMPERATURE_UNIT_CELSIUS);
 	TEST_ASSERT_TRUE(!receiver.values.temperature_unit_updated);
@@ -427,6 +470,30 @@ static void test_receiver_applies_framed_commands_end_to_end(void)
 	uart_command_receiver_poll(&receiver);
 	TEST_ASSERT_TRUE(receiver.values.min_temp == -55);
 	TEST_ASSERT_TRUE(receiver.values.min_temp_updated);
+
+	protobuf = device_DeviceCommand_init_zero;
+	protobuf.which_command = device_DeviceCommand_set_max_humidity_tag;
+	protobuf.command.set_max_humidity.value = 650U;
+	payload_length = encode_command(&protobuf, payload);
+	frame_length = make_frame(payload, payload_length, frame);
+	receiver_feed(&receiver, frame, frame_length);
+	uart_command_receiver_poll(&receiver);
+	TEST_ASSERT_EQUAL_UINT16(
+		650U,
+		receiver.values.max_humidity_tenths_percent);
+	TEST_ASSERT_TRUE(receiver.values.max_humidity_updated);
+
+	protobuf = device_DeviceCommand_init_zero;
+	protobuf.which_command = device_DeviceCommand_set_min_humidity_tag;
+	protobuf.command.set_min_humidity.value = 300U;
+	payload_length = encode_command(&protobuf, payload);
+	frame_length = make_frame(payload, payload_length, frame);
+	receiver_feed(&receiver, frame, frame_length);
+	uart_command_receiver_poll(&receiver);
+	TEST_ASSERT_EQUAL_UINT16(
+		300U,
+		receiver.values.min_humidity_tenths_percent);
+	TEST_ASSERT_TRUE(receiver.values.min_humidity_updated);
 
 	protobuf = device_DeviceCommand_init_zero;
 	protobuf.which_command = device_DeviceCommand_set_current_time_tag;
@@ -510,6 +577,7 @@ int main(void)
 	RUN_TEST(test_decoder_decodes_each_command);
 	RUN_TEST(test_decoder_decodes_ble_connection_state);
 	RUN_TEST(test_decoder_rejects_out_of_range_temperatures);
+	RUN_TEST(test_decoder_rejects_out_of_range_humidity);
 	RUN_TEST(test_decoder_rejects_invalid_payloads);
 	RUN_TEST(test_receiver_initializes_and_accepts_bytes);
 	RUN_TEST(test_receiver_tracks_overflow);

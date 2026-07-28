@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../utils/temperature.dart';
-
-class TemperatureCommand extends StatelessWidget {
-  const TemperatureCommand({
+class LimitCommand extends StatelessWidget {
+  const LimitCommand({
     super.key,
     required this.label,
     required this.hint,
@@ -12,8 +10,9 @@ class TemperatureCommand extends StatelessWidget {
     required this.accent,
     required this.surface,
     required this.controller,
-    required this.currentLimitTenths,
-    required this.fahrenheit,
+    required this.currentLimitText,
+    required this.suffix,
+    required this.allowSigned,
     required this.onSend,
   });
 
@@ -23,8 +22,9 @@ class TemperatureCommand extends StatelessWidget {
   final Color accent;
   final Color surface;
   final TextEditingController controller;
-  final int? currentLimitTenths;
-  final bool fahrenheit;
+  final String currentLimitText;
+  final String suffix;
+  final bool allowSigned;
   final VoidCallback? onSend;
 
   @override
@@ -70,10 +70,7 @@ class TemperatureCommand extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              currentLimitTenths == null
-                  ? 'Current device limit: --.- °${fahrenheit ? 'F' : 'C'}'
-                  : 'Current device limit: '
-                        '${formatTemperatureWithUnit(currentLimitTenths!, fahrenheit: fahrenheit)}',
+              'Current device limit: $currentLimitText',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w700,
@@ -86,12 +83,14 @@ class TemperatureCommand extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    signed: true,
+                  keyboardType: TextInputType.numberWithOptions(
+                    signed: allowSigned,
                     decimal: true,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d?')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(allowSigned ? r'^-?\d*\.?\d?' : r'^\d*\.?\d?'),
+                    ),
                   ],
                   style: const TextStyle(
                     fontSize: 22,
@@ -101,7 +100,7 @@ class TemperatureCommand extends StatelessWidget {
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.8),
-                    suffixText: '°${fahrenheit ? 'F' : 'C'}',
+                    suffixText: suffix,
                     suffixStyle: TextStyle(
                       color: accent,
                       fontWeight: FontWeight.w700,

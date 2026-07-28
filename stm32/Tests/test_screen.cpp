@@ -79,10 +79,14 @@ static void test_screen_initializes_and_writes_fixed_width_rows(void)
 	TEST_ASSERT_TRUE(backlight_call_count == 1U);
 	TEST_ASSERT_TRUE(print_call_count == 1U);
 
-	screen.update(time, 253, TEMPERATURE_UNIT_CELSIUS);
+	screen.update(
+		time,
+		253,
+		TEMPERATURE_UNIT_CELSIUS,
+		std::optional<std::uint32_t>{60075U});
 	TEST_ASSERT_TRUE(write_row_call_count == 2U);
 	TEST_ASSERT_TRUE(strcmp(requested_rows[0], "12:34 27/07/2026") == 0);
-	TEST_ASSERT_TRUE(strcmp(requested_rows[1], "25.3 C") == 0);
+	TEST_ASSERT_TRUE(strcmp(requested_rows[1], "25.3 C 60.1%") == 0);
 }
 
 static void test_screen_formats_fahrenheit(void)
@@ -93,7 +97,11 @@ static void test_screen_formats_fahrenheit(void)
 
 	reset_mocks();
 	screen.initialize();
-	screen.update(time, 100, TEMPERATURE_UNIT_FAHRENHEIT);
+	screen.update(
+		time,
+		100,
+		TEMPERATURE_UNIT_FAHRENHEIT,
+		std::nullopt);
 	TEST_ASSERT_TRUE(strcmp(requested_rows[1], "50.0 F") == 0);
 }
 

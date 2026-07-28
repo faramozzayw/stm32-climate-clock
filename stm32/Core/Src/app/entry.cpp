@@ -6,6 +6,7 @@
 #include "app/app.hpp"
 #include "command_receiver/uart_command_receiver.h"
 #include "drivers/at24c256.h"
+#include "drivers/bmx280.hpp"
 #include "drivers/ds3231.h"
 #include "drivers/hw479.h"
 #include "drivers/lcd1602.h"
@@ -32,11 +33,13 @@ void app_main(void)
 		TIM_CHANNEL_3};
 	at24c256_t eeprom{};
 	ds3231_t rtc{&hi2c1, 0xd0U};
+	climate_clock::Bmx280 environment_sensor{hi2c1};
 
 	climate_clock::App app{
 		lcd,
 		temperature_indicator,
 		rtc,
+		environment_sensor,
 		eeprom,
 		hi2c1,
 		command_receiver,

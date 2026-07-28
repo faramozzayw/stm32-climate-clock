@@ -4,11 +4,12 @@ ClimateClock is a connected temperature clock and threshold controller built
 from an STM32 controller, an ESP32 Bluetooth bridge, and a cross-platform
 Flutter application.
 
-The device displays the current UTC date, time, and temperature on a 16×2 LCD.
-The mobile application can configure minimum and maximum temperature limits,
-switch between Celsius and Fahrenheit, synchronize the real-time clock, receive
-live telemetry, and show local notifications when the temperature leaves the
-configured range.
+The device displays the current UTC date, time, temperature, and, when available,
+humidity on a 16×2 LCD.
+The mobile application can configure temperature and humidity limits, switch
+between Celsius and Fahrenheit, synchronize the real-time clock, receive live
+telemetry, and show local notifications when the temperature or humidity
+leaves its configured range.
 
 ## System architecture
 
@@ -17,7 +18,8 @@ flowchart LR
     A["Flutter app"] <-->|"BLE / Nordic UART Service<br/>Protocol Buffers"| B["ESP32 bridge"]
     B <-->|"115200 baud UART<br/>framing + CRC-16"| C["STM32L073 controller"]
     C --> D["16×2 I²C LCD"]
-    C <--> E["DS3231 RTC + temperature"]
+    C <--> E["DS3231 RTC"]
+    C <--> J["BME280 / BMP280 sensor"]
     C <--> F["AT24C256 EEPROM"]
     C --> G["RGB temperature indicator"]
     C --> H["BLE connection LED"]
@@ -26,8 +28,8 @@ flowchart LR
 
 Commands travel from the Flutter app to the ESP32 over Bluetooth Low Energy.
 The ESP32 adds stream framing and forwards them to the STM32 over UART. The
-STM32 sends temperature telemetry in the opposite direction, allowing the app
-to update its UI and temperature alerts.
+STM32 sends temperature and humidity telemetry in the opposite direction,
+allowing the app to update its UI and environmental alerts.
 
 ## What this project uses
 
@@ -46,10 +48,11 @@ to update its UI and temperature alerts.
 
 ### Hardware peripherals
 
-- **DS3231** real-time clock; its integrated temperature sensor provides the
-  current temperature
+- **DS3231** real-time clock for UTC date and time
+- **BME280 / BMP280** environmental sensor as the temperature source, with
+  pressure support and humidity support when a BME280 is fitted
 - **LCD1602 / HD44780-compatible 16×2 display** through a PCF8574 I²C backpack
-- **AT24C256 EEPROM** for persistent minimum and maximum temperature settings
+- **AT24C256 EEPROM** for persistent temperature and humidity limits
 - **HW-479 RGB LED module** for below-range and above-range indication
 - A separate PWM-driven LED for BLE connection state
 
@@ -68,10 +71,10 @@ to update its UI and temperature alerts.
   notifications
 - **permission_handler** for platform-specific Bluetooth permissions, including
   Android runtime permissions
-- **flutter_local_notifications** for temperature threshold alerts
+- **flutter_local_notifications** for temperature and humidity threshold alerts
 - **protobuf** and **fixnum** for generated protocol messages and 64-bit values
-- Material UI with live temperature, threshold controls, Celsius/Fahrenheit
-  selection, and RTC synchronization
+- Material UI with live temperature and humidity, limit controls,
+  Celsius/Fahrenheit selection, and RTC synchronization
 
 ### Data and tooling
 
@@ -85,14 +88,15 @@ to update its UI and temperature alerts.
 
 ## Main features
 
-- Displays UTC time, date, and temperature without clearing the LCD on each
-  update, avoiding visible flicker
-- Configurable minimum and maximum temperature limits
-- Persistent thresholds with safe defaults when EEPROM is unavailable
+- Displays UTC time, date, temperature, and available humidity without clearing
+  the LCD on each update, avoiding visible flicker
+- Configurable minimum and maximum temperature and humidity limits
+- Persistent limits with safe defaults when EEPROM is unavailable
 - Celsius and Fahrenheit display modes while storing protocol values in tenths
   of a degree Celsius
 - Blue indication below the minimum, red indication at or above the maximum
-- Live BLE telemetry and local notifications when temperature crosses a limit
+- Live BLE telemetry and local notifications when temperature or humidity
+  crosses a limit
 - BLE connecting/disconnecting animation and steady connected indication
 - Framed UART protocol that can recover from noise, incomplete messages, and
   corrupted payloads
@@ -115,9 +119,10 @@ to update its UI and temperature alerts.
 [`protocol/device.proto`](protocol/device.proto) defines a `DeviceMessage`
 envelope containing:
 
-- Commands to set minimum temperature, maximum temperature, current time, and
-  display unit
-- Temperature telemetry containing the current, minimum, and maximum values
+- Commands to set temperature and humidity limits, current time, and display
+  unit
+- Environmental telemetry split into live measurements and configured limits,
+  keeping each BLE notification within the default payload size
 - ESP32 bridge connection-state reports
 
 BLE carries serialized protobuf messages directly. UART is a byte stream, so
@@ -163,7 +168,7 @@ The main connections configured by the project are:
 
 | STM32 interface | Pins | Purpose |
 | --- | --- | --- |
-| I2C1 | PB6 SCL, PB9 SDA | LCD1602, DS3231, and AT24C256 |
+| I2C1 | PB6 SCL, PB9 SDA | LCD1602, DS3231, AT24C256, and BME280/BMP280 |
 | USART1 | PA9 TX, PA10 RX | Framed communication with the ESP32 |
 | USART2 | PA2 TX, PA3 RX | Debug `printf` output |
 | TIM2 PWM | PA0, PA1, PB10, PB11 | RGB indicator and BLE connection LED |

@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../utils/humidity.dart';
 import '../utils/temperature.dart';
 
-class CurrentTemperatureCard extends StatelessWidget {
-  const CurrentTemperatureCard({
+class CurrentConditionsCard extends StatelessWidget {
+  const CurrentConditionsCard({
     required this.temperatureTenths,
+    required this.humidityMilliPercent,
     required this.fahrenheit,
     super.key,
   });
 
   final int? temperatureTenths;
+  final int? humidityMilliPercent;
   final bool fahrenheit;
 
   @override
   Widget build(BuildContext context) {
     final temperature = temperatureTenths;
+    final humidity = humidityMilliPercent;
+    final hasMeasurement = temperature != null || humidity != null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -51,14 +56,14 @@ class CurrentTemperatureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Current temperature',
+                  'Current conditions',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  temperature == null
-                      ? 'Waiting for device data'
-                      : 'Live from device',
+                  hasMeasurement
+                      ? 'Live from device'
+                      : 'Waiting for device data',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: const Color(0xFF777287),
                   ),
@@ -67,19 +72,46 @@ class CurrentTemperatureCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            temperature == null
-                ? '--.- °${fahrenheit ? 'F' : 'C'}'
-                : formatTemperatureWithUnit(
-                    temperature,
-                    fahrenheit: fahrenheit,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                temperature == null
+                    ? '--.- °${fahrenheit ? 'F' : 'C'}'
+                    : formatTemperatureWithUnit(
+                        temperature,
+                        fahrenheit: fahrenheit,
+                      ),
+                style: const TextStyle(
+                  color: Color(0xFF29263A),
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.7,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.water_drop_rounded,
+                    color: Color(0xFF59AFC7),
+                    size: 15,
                   ),
-            style: const TextStyle(
-              color: Color(0xFF29263A),
-              fontSize: 25,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.7,
-            ),
+                  const SizedBox(width: 3),
+                  Text(
+                    humidity == null
+                        ? '--.-%'
+                        : formatHumidityMilliPercent(humidity),
+                    style: const TextStyle(
+                      color: Color(0xFF4C8291),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),

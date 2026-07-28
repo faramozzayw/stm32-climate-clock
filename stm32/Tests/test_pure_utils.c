@@ -10,18 +10,19 @@
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 
-static void test_temperature_converts_to_fixed_point(void)
-{
-	TEST_ASSERT_TRUE(tempToFixed(12.34f) == 123);
-	TEST_ASSERT_TRUE(tempToFixed(12.35f) == 124);
-	TEST_ASSERT_TRUE(tempToFixed(-0.05f) == -1);
-}
-
 static void test_temperature_converts_between_units(void)
 {
 	TEST_ASSERT_TRUE(celsius_to_fahrenheit_fixed(0) == 320);
 	TEST_ASSERT_TRUE(celsius_to_fahrenheit_fixed(100) == 500);
 	TEST_ASSERT_TRUE(celsius_to_fahrenheit_fixed(-400) == -400);
+}
+
+static void test_temperature_rounds_hundredths_to_tenths(void)
+{
+	TEST_ASSERT_TRUE(centi_celsius_to_tenths(2504) == 250);
+	TEST_ASSERT_TRUE(centi_celsius_to_tenths(2505) == 251);
+	TEST_ASSERT_TRUE(centi_celsius_to_tenths(-4) == 0);
+	TEST_ASSERT_TRUE(centi_celsius_to_tenths(-5) == -1);
 }
 
 static void test_temperature_formats_signed_values(void)
@@ -74,6 +75,22 @@ static void test_byte_codec_uses_little_endian_order(void)
 	write_int16_le(encoded, 0x1234);
 	TEST_ASSERT_TRUE(encoded[0] == 0x34U);
 	TEST_ASSERT_TRUE(encoded[1] == 0x12U);
+	TEST_ASSERT_TRUE(read_uint16_le(encoded) == 0x1234U);
+}
+
+static void test_byte_codec_decodes_signed_12_bit_values(void)
+{
+	TEST_ASSERT_TRUE(decode_int12(0x0000U) == 0);
+	TEST_ASSERT_TRUE(decode_int12(0x07FFU) == 2047);
+	TEST_ASSERT_TRUE(decode_int12(0x0800U) == -2048);
+	TEST_ASSERT_TRUE(decode_int12(0x0FFFU) == -1);
+}
+
+static void test_byte_codec_reads_unsigned_20_bit_big_endian_values(void)
+{
+	const uint8_t encoded[] = {0xABU, 0xCDU, 0xE0U};
+
+	TEST_ASSERT_TRUE(read_uint20_be(encoded) == 0xABCDEU);
 }
 
 static void test_calendar_time_converts_unix_epoch(void)
@@ -126,12 +143,14 @@ void tearDown(void)
 int main(void)
 {
 	UNITY_BEGIN();
-	RUN_TEST(test_temperature_converts_to_fixed_point);
 	RUN_TEST(test_temperature_converts_between_units);
+	RUN_TEST(test_temperature_rounds_hundredths_to_tenths);
 	RUN_TEST(test_temperature_formats_signed_values);
 	RUN_TEST(test_temperature_format_rejects_invalid_destination);
 	RUN_TEST(test_byte_codec_round_trips_signed_values);
 	RUN_TEST(test_byte_codec_uses_little_endian_order);
+	RUN_TEST(test_byte_codec_decodes_signed_12_bit_values);
+	RUN_TEST(test_byte_codec_reads_unsigned_20_bit_big_endian_values);
 	RUN_TEST(test_calendar_time_converts_unix_epoch);
 	RUN_TEST(test_calendar_time_handles_leap_day_and_milliseconds);
 	RUN_TEST(test_calendar_time_rejects_unsupported_range);

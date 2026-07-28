@@ -19,7 +19,10 @@ extern "C"
 {
 #endif
 
-	int16_t tempToFixed(float temp);
+	/**
+	 * @brief Round hundredths of a degree Celsius to tenths.
+	 */
+	int16_t centi_celsius_to_tenths(int32_t centi_celsius);
 
 	/**
  * @brief Convert tenths of a degree Celsius to tenths of a degree Fahrenheit.

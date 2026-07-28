@@ -134,6 +134,8 @@ enum DeviceCommand_Command {
   setMinTemp,
   setCurrentTime,
   setTemperatureUnit,
+  setMaxHumidity,
+  setMinHumidity,
   notSet
 }
 
@@ -145,6 +147,8 @@ class DeviceCommand extends $pb.GeneratedMessage {
     SetMinTemp? setMinTemp,
     SetCurrentTime? setCurrentTime,
     SetTemperatureUnit? setTemperatureUnit,
+    SetMaxHumidity? setMaxHumidity,
+    SetMinHumidity? setMinHumidity,
   }) {
     final result = create();
     if (setMaxTemp != null) result.setMaxTemp = setMaxTemp;
@@ -152,6 +156,8 @@ class DeviceCommand extends $pb.GeneratedMessage {
     if (setCurrentTime != null) result.setCurrentTime = setCurrentTime;
     if (setTemperatureUnit != null)
       result.setTemperatureUnit = setTemperatureUnit;
+    if (setMaxHumidity != null) result.setMaxHumidity = setMaxHumidity;
+    if (setMinHumidity != null) result.setMinHumidity = setMinHumidity;
     return result;
   }
 
@@ -170,13 +176,15 @@ class DeviceCommand extends $pb.GeneratedMessage {
     2: DeviceCommand_Command.setMinTemp,
     3: DeviceCommand_Command.setCurrentTime,
     4: DeviceCommand_Command.setTemperatureUnit,
+    5: DeviceCommand_Command.setMaxHumidity,
+    6: DeviceCommand_Command.setMinHumidity,
     0: DeviceCommand_Command.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'DeviceCommand',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
       createEmptyInstance: create)
-    ..oo(0, [1, 2, 3, 4])
+    ..oo(0, [1, 2, 3, 4, 5, 6])
     ..aOM<SetMaxTemp>(1, _omitFieldNames ? '' : 'setMaxTemp',
         subBuilder: SetMaxTemp.create)
     ..aOM<SetMinTemp>(2, _omitFieldNames ? '' : 'setMinTemp',
@@ -185,6 +193,10 @@ class DeviceCommand extends $pb.GeneratedMessage {
         subBuilder: SetCurrentTime.create)
     ..aOM<SetTemperatureUnit>(4, _omitFieldNames ? '' : 'setTemperatureUnit',
         subBuilder: SetTemperatureUnit.create)
+    ..aOM<SetMaxHumidity>(5, _omitFieldNames ? '' : 'setMaxHumidity',
+        subBuilder: SetMaxHumidity.create)
+    ..aOM<SetMinHumidity>(6, _omitFieldNames ? '' : 'setMinHumidity',
+        subBuilder: SetMinHumidity.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -210,12 +222,16 @@ class DeviceCommand extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   @$pb.TagNumber(3)
   @$pb.TagNumber(4)
+  @$pb.TagNumber(5)
+  @$pb.TagNumber(6)
   DeviceCommand_Command whichCommand() =>
       _DeviceCommand_CommandByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(1)
   @$pb.TagNumber(2)
   @$pb.TagNumber(3)
   @$pb.TagNumber(4)
+  @$pb.TagNumber(5)
+  @$pb.TagNumber(6)
   void clearCommand() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -261,6 +277,28 @@ class DeviceCommand extends $pb.GeneratedMessage {
   void clearSetTemperatureUnit() => $_clearField(4);
   @$pb.TagNumber(4)
   SetTemperatureUnit ensureSetTemperatureUnit() => $_ensure(3);
+
+  @$pb.TagNumber(5)
+  SetMaxHumidity get setMaxHumidity => $_getN(4);
+  @$pb.TagNumber(5)
+  set setMaxHumidity(SetMaxHumidity value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSetMaxHumidity() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSetMaxHumidity() => $_clearField(5);
+  @$pb.TagNumber(5)
+  SetMaxHumidity ensureSetMaxHumidity() => $_ensure(4);
+
+  @$pb.TagNumber(6)
+  SetMinHumidity get setMinHumidity => $_getN(5);
+  @$pb.TagNumber(6)
+  set setMinHumidity(SetMinHumidity value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSetMinHumidity() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSetMinHumidity() => $_clearField(6);
+  @$pb.TagNumber(6)
+  SetMinHumidity ensureSetMinHumidity() => $_ensure(5);
 }
 
 class SetMaxTemp extends $pb.GeneratedMessage {
@@ -397,7 +435,7 @@ class SetMaxHumidity extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'SetMaxHumidity',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
       createEmptyInstance: create)
-    ..aI(1, _omitFieldNames ? '' : 'value', fieldType: $pb.PbFieldType.OS3)
+    ..aI(1, _omitFieldNames ? '' : 'value', fieldType: $pb.PbFieldType.OU3)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -419,10 +457,11 @@ class SetMaxHumidity extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<SetMaxHumidity>(create);
   static SetMaxHumidity? _defaultInstance;
 
+  /// Relative humidity in tenths of a percent. Valid range: 0..1000.
   @$pb.TagNumber(1)
   $core.int get value => $_getIZ(0);
   @$pb.TagNumber(1)
-  set value($core.int value) => $_setSignedInt32(0, value);
+  set value($core.int value) => $_setUnsignedInt32(0, value);
   @$pb.TagNumber(1)
   $core.bool hasValue() => $_has(0);
   @$pb.TagNumber(1)
@@ -451,7 +490,7 @@ class SetMinHumidity extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'SetMinHumidity',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
       createEmptyInstance: create)
-    ..aI(1, _omitFieldNames ? '' : 'value', fieldType: $pb.PbFieldType.OS3)
+    ..aI(1, _omitFieldNames ? '' : 'value', fieldType: $pb.PbFieldType.OU3)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -473,10 +512,11 @@ class SetMinHumidity extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<SetMinHumidity>(create);
   static SetMinHumidity? _defaultInstance;
 
+  /// Relative humidity in tenths of a percent. Valid range: 0..1000.
   @$pb.TagNumber(1)
   $core.int get value => $_getIZ(0);
   @$pb.TagNumber(1)
-  set value($core.int value) => $_setSignedInt32(0, value);
+  set value($core.int value) => $_setUnsignedInt32(0, value);
   @$pb.TagNumber(1)
   $core.bool hasValue() => $_has(0);
   @$pb.TagNumber(1)
@@ -594,16 +634,16 @@ class SetTemperatureUnit extends $pb.GeneratedMessage {
   void clearUnit() => $_clearField(1);
 }
 
+enum DeviceTelemetry_Data { measurement, limits, notSet }
+
 class DeviceTelemetry extends $pb.GeneratedMessage {
   factory DeviceTelemetry({
-    $core.int? currentTemp,
-    $core.int? minTemp,
-    $core.int? maxTemp,
+    EnvironmentMeasurement? measurement,
+    EnvironmentLimits? limits,
   }) {
     final result = create();
-    if (currentTemp != null) result.currentTemp = currentTemp;
-    if (minTemp != null) result.minTemp = minTemp;
-    if (maxTemp != null) result.maxTemp = maxTemp;
+    if (measurement != null) result.measurement = measurement;
+    if (limits != null) result.limits = limits;
     return result;
   }
 
@@ -616,14 +656,21 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
       create()..mergeFromJson(json, registry);
 
+  static const $core.Map<$core.int, DeviceTelemetry_Data>
+      _DeviceTelemetry_DataByTag = {
+    1: DeviceTelemetry_Data.measurement,
+    2: DeviceTelemetry_Data.limits,
+    0: DeviceTelemetry_Data.notSet
+  };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'DeviceTelemetry',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
       createEmptyInstance: create)
-    ..aI(1, _omitFieldNames ? '' : 'currentTemp',
-        fieldType: $pb.PbFieldType.OS3)
-    ..aI(2, _omitFieldNames ? '' : 'minTemp', fieldType: $pb.PbFieldType.OS3)
-    ..aI(3, _omitFieldNames ? '' : 'maxTemp', fieldType: $pb.PbFieldType.OS3)
+    ..oo(0, [1, 2])
+    ..aOM<EnvironmentMeasurement>(1, _omitFieldNames ? '' : 'measurement',
+        subBuilder: EnvironmentMeasurement.create)
+    ..aOM<EnvironmentLimits>(2, _omitFieldNames ? '' : 'limits',
+        subBuilder: EnvironmentLimits.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -645,35 +692,212 @@ class DeviceTelemetry extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<DeviceTelemetry>(create);
   static DeviceTelemetry? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  DeviceTelemetry_Data whichData() =>
+      _DeviceTelemetry_DataByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearData() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  EnvironmentMeasurement get measurement => $_getN(0);
+  @$pb.TagNumber(1)
+  set measurement(EnvironmentMeasurement value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMeasurement() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMeasurement() => $_clearField(1);
+  @$pb.TagNumber(1)
+  EnvironmentMeasurement ensureMeasurement() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  EnvironmentLimits get limits => $_getN(1);
+  @$pb.TagNumber(2)
+  set limits(EnvironmentLimits value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLimits() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLimits() => $_clearField(2);
+  @$pb.TagNumber(2)
+  EnvironmentLimits ensureLimits() => $_ensure(1);
+}
+
+class EnvironmentMeasurement extends $pb.GeneratedMessage {
+  factory EnvironmentMeasurement({
+    $core.int? temperatureTenthsCelsius,
+    $core.int? humidityMilliPercent,
+  }) {
+    final result = create();
+    if (temperatureTenthsCelsius != null)
+      result.temperatureTenthsCelsius = temperatureTenthsCelsius;
+    if (humidityMilliPercent != null)
+      result.humidityMilliPercent = humidityMilliPercent;
+    return result;
+  }
+
+  EnvironmentMeasurement._();
+
+  factory EnvironmentMeasurement.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EnvironmentMeasurement.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EnvironmentMeasurement',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'temperatureTenthsCelsius',
+        fieldType: $pb.PbFieldType.OS3)
+    ..aI(2, _omitFieldNames ? '' : 'humidityMilliPercent',
+        fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EnvironmentMeasurement clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EnvironmentMeasurement copyWith(
+          void Function(EnvironmentMeasurement) updates) =>
+      super.copyWith((message) => updates(message as EnvironmentMeasurement))
+          as EnvironmentMeasurement;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static EnvironmentMeasurement create() => EnvironmentMeasurement._();
+  @$core.override
+  EnvironmentMeasurement createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static EnvironmentMeasurement getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EnvironmentMeasurement>(create);
+  static EnvironmentMeasurement? _defaultInstance;
+
   /// Temperature in tenths of a degree Celsius.
   @$pb.TagNumber(1)
-  $core.int get currentTemp => $_getIZ(0);
+  $core.int get temperatureTenthsCelsius => $_getIZ(0);
   @$pb.TagNumber(1)
-  set currentTemp($core.int value) => $_setSignedInt32(0, value);
+  set temperatureTenthsCelsius($core.int value) => $_setSignedInt32(0, value);
   @$pb.TagNumber(1)
-  $core.bool hasCurrentTemp() => $_has(0);
+  $core.bool hasTemperatureTenthsCelsius() => $_has(0);
   @$pb.TagNumber(1)
-  void clearCurrentTemp() => $_clearField(1);
+  void clearTemperatureTenthsCelsius() => $_clearField(1);
+
+  /// Relative humidity in thousandths of a percent.
+  @$pb.TagNumber(2)
+  $core.int get humidityMilliPercent => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set humidityMilliPercent($core.int value) => $_setUnsignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasHumidityMilliPercent() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearHumidityMilliPercent() => $_clearField(2);
+}
+
+class EnvironmentLimits extends $pb.GeneratedMessage {
+  factory EnvironmentLimits({
+    $core.int? minTemperatureTenthsCelsius,
+    $core.int? maxTemperatureTenthsCelsius,
+    $core.int? minHumidityTenthsPercent,
+    $core.int? maxHumidityTenthsPercent,
+  }) {
+    final result = create();
+    if (minTemperatureTenthsCelsius != null)
+      result.minTemperatureTenthsCelsius = minTemperatureTenthsCelsius;
+    if (maxTemperatureTenthsCelsius != null)
+      result.maxTemperatureTenthsCelsius = maxTemperatureTenthsCelsius;
+    if (minHumidityTenthsPercent != null)
+      result.minHumidityTenthsPercent = minHumidityTenthsPercent;
+    if (maxHumidityTenthsPercent != null)
+      result.maxHumidityTenthsPercent = maxHumidityTenthsPercent;
+    return result;
+  }
+
+  EnvironmentLimits._();
+
+  factory EnvironmentLimits.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EnvironmentLimits.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EnvironmentLimits',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'device'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'minTemperatureTenthsCelsius',
+        fieldType: $pb.PbFieldType.OS3)
+    ..aI(2, _omitFieldNames ? '' : 'maxTemperatureTenthsCelsius',
+        fieldType: $pb.PbFieldType.OS3)
+    ..aI(3, _omitFieldNames ? '' : 'minHumidityTenthsPercent',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(4, _omitFieldNames ? '' : 'maxHumidityTenthsPercent',
+        fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EnvironmentLimits clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EnvironmentLimits copyWith(void Function(EnvironmentLimits) updates) =>
+      super.copyWith((message) => updates(message as EnvironmentLimits))
+          as EnvironmentLimits;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static EnvironmentLimits create() => EnvironmentLimits._();
+  @$core.override
+  EnvironmentLimits createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static EnvironmentLimits getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EnvironmentLimits>(create);
+  static EnvironmentLimits? _defaultInstance;
 
   /// Configured minimum temperature in tenths of a degree Celsius.
-  @$pb.TagNumber(2)
-  $core.int get minTemp => $_getIZ(1);
-  @$pb.TagNumber(2)
-  set minTemp($core.int value) => $_setSignedInt32(1, value);
-  @$pb.TagNumber(2)
-  $core.bool hasMinTemp() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearMinTemp() => $_clearField(2);
+  @$pb.TagNumber(1)
+  $core.int get minTemperatureTenthsCelsius => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set minTemperatureTenthsCelsius($core.int value) =>
+      $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMinTemperatureTenthsCelsius() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMinTemperatureTenthsCelsius() => $_clearField(1);
 
   /// Configured maximum temperature in tenths of a degree Celsius.
+  @$pb.TagNumber(2)
+  $core.int get maxTemperatureTenthsCelsius => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set maxTemperatureTenthsCelsius($core.int value) =>
+      $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMaxTemperatureTenthsCelsius() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMaxTemperatureTenthsCelsius() => $_clearField(2);
+
+  /// Configured minimum relative humidity in tenths of a percent.
   @$pb.TagNumber(3)
-  $core.int get maxTemp => $_getIZ(2);
+  $core.int get minHumidityTenthsPercent => $_getIZ(2);
   @$pb.TagNumber(3)
-  set maxTemp($core.int value) => $_setSignedInt32(2, value);
+  set minHumidityTenthsPercent($core.int value) => $_setUnsignedInt32(2, value);
   @$pb.TagNumber(3)
-  $core.bool hasMaxTemp() => $_has(2);
+  $core.bool hasMinHumidityTenthsPercent() => $_has(2);
   @$pb.TagNumber(3)
-  void clearMaxTemp() => $_clearField(3);
+  void clearMinHumidityTenthsPercent() => $_clearField(3);
+
+  /// Configured maximum relative humidity in tenths of a percent.
+  @$pb.TagNumber(4)
+  $core.int get maxHumidityTenthsPercent => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set maxHumidityTenthsPercent($core.int value) => $_setUnsignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMaxHumidityTenthsPercent() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMaxHumidityTenthsPercent() => $_clearField(4);
 }
 
 /// BLE connection state reported by the ESP32 bridge to the STM32.

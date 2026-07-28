@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../utils/humidity.dart';
 import '../utils/temperature.dart';
+import 'limit_alert_tracker.dart';
 
-enum _TemperatureState { normal, belowMinimum, aboveMaximum }
+class EnvironmentNotificationService {
+  static const _temperatureNotificationId = 1;
+  static const _humidityNotificationId = 2;
+  static const _humidityLimitScale = 100;
 
-class TemperatureNotificationService {
-  static const _notificationId = 1;
   static const _settings = InitializationSettings(
     android: AndroidInitializationSettings('ic_temperature_notification'),
     iOS: DarwinInitializationSettings(
@@ -21,17 +24,19 @@ class TemperatureNotificationService {
     ),
     linux: LinuxInitializationSettings(defaultActionName: 'Open'),
     windows: WindowsInitializationSettings(
-      appName: 'Temperature Controller',
-      appUserModelId: 'TemperatureController.App',
+      appName: 'Climate Clock',
+      appUserModelId: 'ClimateClock.App',
       guid: '4415f4a4-9186-40b3-9c40-78efd5d75de2',
     ),
     web: WebInitializationSettings(),
   );
+
   static const _details = NotificationDetails(
     android: AndroidNotificationDetails(
-      'temperature_alerts',
-      'Temperature alerts',
-      channelDescription: 'Alerts when the temperature is outside its limits',
+      'environment_alerts',
+      'Environment alerts',
+      channelDescription:
+          'Alerts when temperature or humidity is outside its limits',
       importance: Importance.high,
       priority: Priority.high,
     ),
@@ -45,8 +50,9 @@ class TemperatureNotificationService {
   );
 
   final _notifications = FlutterLocalNotificationsPlugin();
+  final _temperatureAlerts = LimitAlertTracker();
+  final _humidityAlerts = LimitAlertTracker();
   bool _available = false;
-  _TemperatureState _temperatureState = _TemperatureState.normal;
 
   Future<void> initialize() async {
     try {
@@ -105,35 +111,31 @@ class TemperatureNotificationService {
     required int maxTemperature,
     required bool fahrenheit,
   }) async {
-    final _TemperatureState nextState;
-    if (currentTemperature < minTemperature) {
-      nextState = _TemperatureState.belowMinimum;
-    } else if (currentTemperature > maxTemperature) {
-      nextState = _TemperatureState.aboveMaximum;
-    } else {
-      nextState = _TemperatureState.normal;
-    }
+    final alert = _temperatureAlerts.update(
+      value: currentTemperature,
+      minimum: minTemperature,
+      maximum: maxTemperature,
+    );
 
-    if (nextState == _temperatureState) return;
-    _temperatureState = nextState;
-
-    switch (nextState) {
-      case _TemperatureState.normal:
+    switch (alert) {
+      case null:
         return;
-      case _TemperatureState.belowMinimum:
+      case LimitAlert.belowMinimum:
         await _show(
-          title: '🥶 Temperature below minimum',
+          id: _temperatureNotificationId,
+          title: 'Temperature below minimum',
           body:
-              '🌡️ Current temperature is '
+              'Current temperature is '
               '${formatTemperatureWithUnit(currentTemperature, fahrenheit: fahrenheit)}. '
               'Minimum is '
               '${formatTemperatureWithUnit(minTemperature, fahrenheit: fahrenheit)}.',
         );
-      case _TemperatureState.aboveMaximum:
+      case LimitAlert.aboveMaximum:
         await _show(
-          title: '🔥 Temperature above maximum',
+          id: _temperatureNotificationId,
+          title: 'Temperature above maximum',
           body:
-              '🌡️ Current temperature is '
+              'Current temperature is '
               '${formatTemperatureWithUnit(currentTemperature, fahrenheit: fahrenheit)}. '
               'Maximum is '
               '${formatTemperatureWithUnit(maxTemperature, fahrenheit: fahrenheit)}.',
@@ -141,15 +143,57 @@ class TemperatureNotificationService {
     }
   }
 
-  void resetTemperatureState() {
-    _temperatureState = _TemperatureState.normal;
+  Future<void> updateHumidity({
+    required int currentHumidityMilliPercent,
+    required int minHumidityTenthsPercent,
+    required int maxHumidityTenthsPercent,
+  }) async {
+    final alert = _humidityAlerts.update(
+      value: currentHumidityMilliPercent,
+      minimum: minHumidityTenthsPercent * _humidityLimitScale,
+      maximum: maxHumidityTenthsPercent * _humidityLimitScale,
+    );
+
+    switch (alert) {
+      case null:
+        return;
+      case LimitAlert.belowMinimum:
+        await _show(
+          id: _humidityNotificationId,
+          title: 'Humidity below minimum',
+          body:
+              'Current humidity is '
+              '${formatHumidityMilliPercent(currentHumidityMilliPercent)}. '
+              'Minimum is '
+              '${formatHumidityTenthsPercent(minHumidityTenthsPercent)}.',
+        );
+      case LimitAlert.aboveMaximum:
+        await _show(
+          id: _humidityNotificationId,
+          title: 'Humidity above maximum',
+          body:
+              'Current humidity is '
+              '${formatHumidityMilliPercent(currentHumidityMilliPercent)}. '
+              'Maximum is '
+              '${formatHumidityTenthsPercent(maxHumidityTenthsPercent)}.',
+        );
+    }
   }
 
-  Future<void> _show({required String title, required String body}) async {
+  void reset() {
+    _temperatureAlerts.reset();
+    _humidityAlerts.reset();
+  }
+
+  Future<void> _show({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
     if (!_available) return;
 
     await _notifications.show(
-      id: _notificationId,
+      id: id,
       title: title,
       body: body,
       notificationDetails: _details,

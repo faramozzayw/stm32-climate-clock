@@ -19,6 +19,8 @@ message DeviceCommand {
     SetMinTemp set_min_temp = 2;
     SetCurrentTime set_current_time = 3;
     SetTemperatureUnit set_temperature_unit = 4;
+    SetMaxHumidity set_max_humidity = 5;
+    SetMinHumidity set_min_humidity = 6;
   }
 }
 
@@ -37,11 +39,13 @@ message SetMinTemp {
 }
 
 message SetMaxHumidity {
-  sint32 value = 1;
+  // Relative humidity in tenths of a percent. Valid range: 0..1000.
+  uint32 value = 1;
 }
 
 message SetMinHumidity {
-  sint32 value = 1;
+  // Relative humidity in tenths of a percent. Valid range: 0..1000.
+  uint32 value = 1;
 }
 
 message SetCurrentTime {
@@ -59,12 +63,28 @@ message SetTemperatureUnit {
 }
 
 message DeviceTelemetry {
+  oneof data {
+    EnvironmentMeasurement measurement = 1;
+    EnvironmentLimits limits = 2;
+  }
+}
+
+message EnvironmentMeasurement {
   // Temperature in tenths of a degree Celsius.
-  sint32 current_temp = 1;
+  sint32 temperature_tenths_celsius = 1;
+  // Relative humidity in thousandths of a percent.
+  optional uint32 humidity_milli_percent = 2;
+}
+
+message EnvironmentLimits {
   // Configured minimum temperature in tenths of a degree Celsius.
-  sint32 min_temp = 2;
+  sint32 min_temperature_tenths_celsius = 1;
   // Configured maximum temperature in tenths of a degree Celsius.
-  sint32 max_temp = 3;
+  sint32 max_temperature_tenths_celsius = 2;
+  // Configured minimum relative humidity in tenths of a percent.
+  uint32 min_humidity_tenths_percent = 3;
+  // Configured maximum relative humidity in tenths of a percent.
+  uint32 max_humidity_tenths_percent = 4;
 }
 
 enum BleConnectionState {

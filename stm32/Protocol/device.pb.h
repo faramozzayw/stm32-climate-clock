@@ -38,11 +38,13 @@ typedef struct _device_SetMinTemp {
 } device_SetMinTemp;
 
 typedef struct _device_SetMaxHumidity {
-    int32_t value;
+    /* Relative humidity in tenths of a percent. Valid range: 0..1000. */
+    uint32_t value;
 } device_SetMaxHumidity;
 
 typedef struct _device_SetMinHumidity {
-    int32_t value;
+    /* Relative humidity in tenths of a percent. Valid range: 0..1000. */
+    uint32_t value;
 } device_SetMinHumidity;
 
 typedef struct _device_SetCurrentTime {
@@ -63,16 +65,36 @@ typedef struct _device_DeviceCommand {
         device_SetMinTemp set_min_temp;
         device_SetCurrentTime set_current_time;
         device_SetTemperatureUnit set_temperature_unit;
+        device_SetMaxHumidity set_max_humidity;
+        device_SetMinHumidity set_min_humidity;
     } command;
 } device_DeviceCommand;
 
-typedef struct _device_DeviceTelemetry {
+typedef struct _device_EnvironmentMeasurement {
     /* Temperature in tenths of a degree Celsius. */
-    int32_t current_temp;
+    int32_t temperature_tenths_celsius;
+    /* Relative humidity in thousandths of a percent. */
+    bool has_humidity_milli_percent;
+    uint32_t humidity_milli_percent;
+} device_EnvironmentMeasurement;
+
+typedef struct _device_EnvironmentLimits {
     /* Configured minimum temperature in tenths of a degree Celsius. */
-    int32_t min_temp;
+    int32_t min_temperature_tenths_celsius;
     /* Configured maximum temperature in tenths of a degree Celsius. */
-    int32_t max_temp;
+    int32_t max_temperature_tenths_celsius;
+    /* Configured minimum relative humidity in tenths of a percent. */
+    uint32_t min_humidity_tenths_percent;
+    /* Configured maximum relative humidity in tenths of a percent. */
+    uint32_t max_humidity_tenths_percent;
+} device_EnvironmentLimits;
+
+typedef struct _device_DeviceTelemetry {
+    pb_size_t which_data;
+    union _device_DeviceTelemetry_data {
+        device_EnvironmentMeasurement measurement;
+        device_EnvironmentLimits limits;
+    } data;
 } device_DeviceTelemetry;
 
 /* BLE connection state reported by the ESP32 bridge to the STM32. */
@@ -114,6 +136,8 @@ extern "C" {
 #define device_SetTemperatureUnit_unit_ENUMTYPE device_TemperatureUnit
 
 
+
+
 #define device_BridgeStatus_ble_connection_state_ENUMTYPE device_BleConnectionState
 
 
@@ -126,7 +150,9 @@ extern "C" {
 #define device_SetMinHumidity_init_default       {0}
 #define device_SetCurrentTime_init_default       {0}
 #define device_SetTemperatureUnit_init_default   {_device_TemperatureUnit_MIN}
-#define device_DeviceTelemetry_init_default      {0, 0, 0}
+#define device_DeviceTelemetry_init_default      {0, {device_EnvironmentMeasurement_init_default}}
+#define device_EnvironmentMeasurement_init_default {0, false, 0}
+#define device_EnvironmentLimits_init_default    {0, 0, 0, 0}
 #define device_BridgeStatus_init_default         {_device_BleConnectionState_MIN}
 #define device_DeviceMessage_init_zero           {0, {device_DeviceCommand_init_zero}}
 #define device_DeviceCommand_init_zero           {0, {device_SetMaxTemp_init_zero}}
@@ -136,7 +162,9 @@ extern "C" {
 #define device_SetMinHumidity_init_zero          {0}
 #define device_SetCurrentTime_init_zero          {0}
 #define device_SetTemperatureUnit_init_zero      {_device_TemperatureUnit_MIN}
-#define device_DeviceTelemetry_init_zero         {0, 0, 0}
+#define device_DeviceTelemetry_init_zero         {0, {device_EnvironmentMeasurement_init_zero}}
+#define device_EnvironmentMeasurement_init_zero  {0, false, 0}
+#define device_EnvironmentLimits_init_zero       {0, 0, 0, 0}
 #define device_BridgeStatus_init_zero            {_device_BleConnectionState_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -150,9 +178,16 @@ extern "C" {
 #define device_DeviceCommand_set_min_temp_tag    2
 #define device_DeviceCommand_set_current_time_tag 3
 #define device_DeviceCommand_set_temperature_unit_tag 4
-#define device_DeviceTelemetry_current_temp_tag  1
-#define device_DeviceTelemetry_min_temp_tag      2
-#define device_DeviceTelemetry_max_temp_tag      3
+#define device_DeviceCommand_set_max_humidity_tag 5
+#define device_DeviceCommand_set_min_humidity_tag 6
+#define device_EnvironmentMeasurement_temperature_tenths_celsius_tag 1
+#define device_EnvironmentMeasurement_humidity_milli_percent_tag 2
+#define device_EnvironmentLimits_min_temperature_tenths_celsius_tag 1
+#define device_EnvironmentLimits_max_temperature_tenths_celsius_tag 2
+#define device_EnvironmentLimits_min_humidity_tenths_percent_tag 3
+#define device_EnvironmentLimits_max_humidity_tenths_percent_tag 4
+#define device_DeviceTelemetry_measurement_tag   1
+#define device_DeviceTelemetry_limits_tag        2
 #define device_BridgeStatus_ble_connection_state_tag 1
 #define device_DeviceMessage_command_tag         1
 #define device_DeviceMessage_telemetry_tag       2
@@ -173,13 +208,17 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,bridge_status,payload.bridge_status)
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_max_temp,command.set_max_temp),   1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_min_temp,command.set_min_temp),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_current_time,command.set_current_time),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_temperature_unit,command.set_temperature_unit),   4)
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_temperature_unit,command.set_temperature_unit),   4) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_max_humidity,command.set_max_humidity),   5) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,set_min_humidity,command.set_min_humidity),   6)
 #define device_DeviceCommand_CALLBACK NULL
 #define device_DeviceCommand_DEFAULT NULL
 #define device_DeviceCommand_command_set_max_temp_MSGTYPE device_SetMaxTemp
 #define device_DeviceCommand_command_set_min_temp_MSGTYPE device_SetMinTemp
 #define device_DeviceCommand_command_set_current_time_MSGTYPE device_SetCurrentTime
 #define device_DeviceCommand_command_set_temperature_unit_MSGTYPE device_SetTemperatureUnit
+#define device_DeviceCommand_command_set_max_humidity_MSGTYPE device_SetMaxHumidity
+#define device_DeviceCommand_command_set_min_humidity_MSGTYPE device_SetMinHumidity
 
 #define device_SetMaxTemp_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   value,             1)
@@ -192,12 +231,12 @@ X(a, STATIC,   SINGULAR, SINT32,   value,             1)
 #define device_SetMinTemp_DEFAULT NULL
 
 #define device_SetMaxHumidity_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SINT32,   value,             1)
+X(a, STATIC,   SINGULAR, UINT32,   value,             1)
 #define device_SetMaxHumidity_CALLBACK NULL
 #define device_SetMaxHumidity_DEFAULT NULL
 
 #define device_SetMinHumidity_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SINT32,   value,             1)
+X(a, STATIC,   SINGULAR, UINT32,   value,             1)
 #define device_SetMinHumidity_CALLBACK NULL
 #define device_SetMinHumidity_DEFAULT NULL
 
@@ -212,11 +251,26 @@ X(a, STATIC,   SINGULAR, UENUM,    unit,              1)
 #define device_SetTemperatureUnit_DEFAULT NULL
 
 #define device_DeviceTelemetry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SINT32,   current_temp,      1) \
-X(a, STATIC,   SINGULAR, SINT32,   min_temp,          2) \
-X(a, STATIC,   SINGULAR, SINT32,   max_temp,          3)
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,measurement,data.measurement),   1) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,limits,data.limits),   2)
 #define device_DeviceTelemetry_CALLBACK NULL
 #define device_DeviceTelemetry_DEFAULT NULL
+#define device_DeviceTelemetry_data_measurement_MSGTYPE device_EnvironmentMeasurement
+#define device_DeviceTelemetry_data_limits_MSGTYPE device_EnvironmentLimits
+
+#define device_EnvironmentMeasurement_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   temperature_tenths_celsius,   1) \
+X(a, STATIC,   OPTIONAL, UINT32,   humidity_milli_percent,   2)
+#define device_EnvironmentMeasurement_CALLBACK NULL
+#define device_EnvironmentMeasurement_DEFAULT NULL
+
+#define device_EnvironmentLimits_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   min_temperature_tenths_celsius,   1) \
+X(a, STATIC,   SINGULAR, SINT32,   max_temperature_tenths_celsius,   2) \
+X(a, STATIC,   SINGULAR, UINT32,   min_humidity_tenths_percent,   3) \
+X(a, STATIC,   SINGULAR, UINT32,   max_humidity_tenths_percent,   4)
+#define device_EnvironmentLimits_CALLBACK NULL
+#define device_EnvironmentLimits_DEFAULT NULL
 
 #define device_BridgeStatus_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    ble_connection_state,   1)
@@ -232,6 +286,8 @@ extern const pb_msgdesc_t device_SetMinHumidity_msg;
 extern const pb_msgdesc_t device_SetCurrentTime_msg;
 extern const pb_msgdesc_t device_SetTemperatureUnit_msg;
 extern const pb_msgdesc_t device_DeviceTelemetry_msg;
+extern const pb_msgdesc_t device_EnvironmentMeasurement_msg;
+extern const pb_msgdesc_t device_EnvironmentLimits_msg;
 extern const pb_msgdesc_t device_BridgeStatus_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
@@ -244,14 +300,18 @@ extern const pb_msgdesc_t device_BridgeStatus_msg;
 #define device_SetCurrentTime_fields &device_SetCurrentTime_msg
 #define device_SetTemperatureUnit_fields &device_SetTemperatureUnit_msg
 #define device_DeviceTelemetry_fields &device_DeviceTelemetry_msg
+#define device_EnvironmentMeasurement_fields &device_EnvironmentMeasurement_msg
+#define device_EnvironmentLimits_fields &device_EnvironmentLimits_msg
 #define device_BridgeStatus_fields &device_BridgeStatus_msg
 
 /* Maximum encoded size of messages (where known) */
 #define DEVICE_DEVICE_PB_H_MAX_SIZE              device_DeviceMessage_size
 #define device_BridgeStatus_size                 2
 #define device_DeviceCommand_size                13
-#define device_DeviceMessage_size                20
-#define device_DeviceTelemetry_size              18
+#define device_DeviceMessage_size                28
+#define device_DeviceTelemetry_size              26
+#define device_EnvironmentLimits_size            24
+#define device_EnvironmentMeasurement_size       12
 #define device_SetCurrentTime_size               11
 #define device_SetMaxHumidity_size               6
 #define device_SetMaxTemp_size                   6

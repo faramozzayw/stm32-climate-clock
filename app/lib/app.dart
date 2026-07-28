@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'screens/device_page.dart';
-import 'services/temperature_notification_service.dart';
+import 'services/environment_notification_service.dart';
 
 class DeviceApp extends StatelessWidget {
   const DeviceApp({required this.notifications, super.key});
 
-  final TemperatureNotificationService notifications;
+  final EnvironmentNotificationService notifications;
 
   @override
   Widget build(BuildContext context) {

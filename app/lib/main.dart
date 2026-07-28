@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'app.dart';
-import 'services/temperature_notification_service.dart';
+import 'services/environment_notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final notifications = TemperatureNotificationService();
+  final notifications = EnvironmentNotificationService();
   await notifications.initialize();
 
   runApp(DeviceApp(notifications: notifications));

@@ -49,36 +49,3 @@ calendar_time_t ds3231_get_time(ds3231_t *ds3231)
 	time.year = (uint16_t)(2000U + bcdToDec(get_time[6]));
 	return time;
 }
-
-int16_t ds3231_get_temp_fixed(ds3231_t *ds3231)
-{
-	uint8_t temp[2];
-	int16_t quarter_degrees;
-	int16_t tenths_x2;
-
-	HAL_I2C_Mem_Read(ds3231->i2c, ds3231->addr, 0x11, 1, temp, 2, 1000);
-	quarter_degrees = (int16_t)((int8_t)temp[0] * 4) +
-					  (int16_t)(temp[1] >> 6);
-	tenths_x2 = (int16_t)(quarter_degrees * 5);
-
-	return tenths_x2 >= 0
-			   ? (int16_t)((tenths_x2 + 1) / 2)
-			   : (int16_t)((tenths_x2 - 1) / 2);
-}
-
-float ds3231_get_temp(ds3231_t *ds3231)
-{
-	return (float)ds3231_get_temp_fixed(ds3231) / 10.0f;
-}
-
-void ds3231_force_temp_conv(ds3231_t *ds3231)
-{
-	uint8_t status = 0;
-	uint8_t control = 0;
-	HAL_I2C_Mem_Read(ds3231->i2c, ds3231->addr, 0x0F, 1, &status, 1, 100); // read status register
-	if (!(status & 0x04))
-	{
-		HAL_I2C_Mem_Read(ds3231->i2c, ds3231->addr, 0x0E, 1, &control, 1, 100); // read control register
-		HAL_I2C_Mem_Write(ds3231->i2c, ds3231->addr, 0x0E, 1, (uint8_t *)(control | (0x20)), 1, 100);
-	}
-}

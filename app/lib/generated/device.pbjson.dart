@@ -131,6 +131,24 @@ const DeviceCommand$json = {
       '9': 0,
       '10': 'setTemperatureUnit'
     },
+    {
+      '1': 'set_max_humidity',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.device.SetMaxHumidity',
+      '9': 0,
+      '10': 'setMaxHumidity'
+    },
+    {
+      '1': 'set_min_humidity',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.device.SetMinHumidity',
+      '9': 0,
+      '10': 'setMinHumidity'
+    },
   ],
   '8': [
     {'1': 'command'},
@@ -143,8 +161,10 @@ final $typed_data.Uint8List deviceCommandDescriptor = $convert.base64Decode(
     '1wSABSCnNldE1heFRlbXASNgoMc2V0X21pbl90ZW1wGAIgASgLMhIuZGV2aWNlLlNldE1pblRl'
     'bXBIAFIKc2V0TWluVGVtcBJCChBzZXRfY3VycmVudF90aW1lGAMgASgLMhYuZGV2aWNlLlNldE'
     'N1cnJlbnRUaW1lSABSDnNldEN1cnJlbnRUaW1lEk4KFHNldF90ZW1wZXJhdHVyZV91bml0GAQg'
-    'ASgLMhouZGV2aWNlLlNldFRlbXBlcmF0dXJlVW5pdEgAUhJzZXRUZW1wZXJhdHVyZVVuaXRCCQ'
-    'oHY29tbWFuZA==');
+    'ASgLMhouZGV2aWNlLlNldFRlbXBlcmF0dXJlVW5pdEgAUhJzZXRUZW1wZXJhdHVyZVVuaXQSQg'
+    'oQc2V0X21heF9odW1pZGl0eRgFIAEoCzIWLmRldmljZS5TZXRNYXhIdW1pZGl0eUgAUg5zZXRN'
+    'YXhIdW1pZGl0eRJCChBzZXRfbWluX2h1bWlkaXR5GAYgASgLMhYuZGV2aWNlLlNldE1pbkh1bW'
+    'lkaXR5SABSDnNldE1pbkh1bWlkaXR5QgkKB2NvbW1hbmQ=');
 
 @$core.Deprecated('Use setMaxTempDescriptor instead')
 const SetMaxTemp$json = {
@@ -174,25 +194,25 @@ final $typed_data.Uint8List setMinTempDescriptor =
 const SetMaxHumidity$json = {
   '1': 'SetMaxHumidity',
   '2': [
-    {'1': 'value', '3': 1, '4': 1, '5': 17, '10': 'value'},
+    {'1': 'value', '3': 1, '4': 1, '5': 13, '10': 'value'},
   ],
 };
 
 /// Descriptor for `SetMaxHumidity`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List setMaxHumidityDescriptor = $convert
-    .base64Decode('Cg5TZXRNYXhIdW1pZGl0eRIUCgV2YWx1ZRgBIAEoEVIFdmFsdWU=');
+    .base64Decode('Cg5TZXRNYXhIdW1pZGl0eRIUCgV2YWx1ZRgBIAEoDVIFdmFsdWU=');
 
 @$core.Deprecated('Use setMinHumidityDescriptor instead')
 const SetMinHumidity$json = {
   '1': 'SetMinHumidity',
   '2': [
-    {'1': 'value', '3': 1, '4': 1, '5': 17, '10': 'value'},
+    {'1': 'value', '3': 1, '4': 1, '5': 13, '10': 'value'},
   ],
 };
 
 /// Descriptor for `SetMinHumidity`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List setMinHumidityDescriptor = $convert
-    .base64Decode('Cg5TZXRNaW5IdW1pZGl0eRIUCgV2YWx1ZRgBIAEoEVIFdmFsdWU=');
+    .base64Decode('Cg5TZXRNaW5IdW1pZGl0eRIUCgV2YWx1ZRgBIAEoDVIFdmFsdWU=');
 
 @$core.Deprecated('Use setCurrentTimeDescriptor instead')
 const SetCurrentTime$json = {
@@ -230,16 +250,112 @@ final $typed_data.Uint8List setTemperatureUnitDescriptor = $convert.base64Decode
 const DeviceTelemetry$json = {
   '1': 'DeviceTelemetry',
   '2': [
-    {'1': 'current_temp', '3': 1, '4': 1, '5': 17, '10': 'currentTemp'},
-    {'1': 'min_temp', '3': 2, '4': 1, '5': 17, '10': 'minTemp'},
-    {'1': 'max_temp', '3': 3, '4': 1, '5': 17, '10': 'maxTemp'},
+    {
+      '1': 'measurement',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.device.EnvironmentMeasurement',
+      '9': 0,
+      '10': 'measurement'
+    },
+    {
+      '1': 'limits',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.device.EnvironmentLimits',
+      '9': 0,
+      '10': 'limits'
+    },
+  ],
+  '8': [
+    {'1': 'data'},
   ],
 };
 
 /// Descriptor for `DeviceTelemetry`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deviceTelemetryDescriptor = $convert.base64Decode(
-    'Cg9EZXZpY2VUZWxlbWV0cnkSIQoMY3VycmVudF90ZW1wGAEgASgRUgtjdXJyZW50VGVtcBIZCg'
-    'htaW5fdGVtcBgCIAEoEVIHbWluVGVtcBIZCghtYXhfdGVtcBgDIAEoEVIHbWF4VGVtcA==');
+    'Cg9EZXZpY2VUZWxlbWV0cnkSQgoLbWVhc3VyZW1lbnQYASABKAsyHi5kZXZpY2UuRW52aXJvbm'
+    '1lbnRNZWFzdXJlbWVudEgAUgttZWFzdXJlbWVudBIzCgZsaW1pdHMYAiABKAsyGS5kZXZpY2Uu'
+    'RW52aXJvbm1lbnRMaW1pdHNIAFIGbGltaXRzQgYKBGRhdGE=');
+
+@$core.Deprecated('Use environmentMeasurementDescriptor instead')
+const EnvironmentMeasurement$json = {
+  '1': 'EnvironmentMeasurement',
+  '2': [
+    {
+      '1': 'temperature_tenths_celsius',
+      '3': 1,
+      '4': 1,
+      '5': 17,
+      '10': 'temperatureTenthsCelsius'
+    },
+    {
+      '1': 'humidity_milli_percent',
+      '3': 2,
+      '4': 1,
+      '5': 13,
+      '9': 0,
+      '10': 'humidityMilliPercent',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_humidity_milli_percent'},
+  ],
+};
+
+/// Descriptor for `EnvironmentMeasurement`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List environmentMeasurementDescriptor = $convert.base64Decode(
+    'ChZFbnZpcm9ubWVudE1lYXN1cmVtZW50EjwKGnRlbXBlcmF0dXJlX3RlbnRoc19jZWxzaXVzGA'
+    'EgASgRUhh0ZW1wZXJhdHVyZVRlbnRoc0NlbHNpdXMSOQoWaHVtaWRpdHlfbWlsbGlfcGVyY2Vu'
+    'dBgCIAEoDUgAUhRodW1pZGl0eU1pbGxpUGVyY2VudIgBAUIZChdfaHVtaWRpdHlfbWlsbGlfcG'
+    'VyY2VudA==');
+
+@$core.Deprecated('Use environmentLimitsDescriptor instead')
+const EnvironmentLimits$json = {
+  '1': 'EnvironmentLimits',
+  '2': [
+    {
+      '1': 'min_temperature_tenths_celsius',
+      '3': 1,
+      '4': 1,
+      '5': 17,
+      '10': 'minTemperatureTenthsCelsius'
+    },
+    {
+      '1': 'max_temperature_tenths_celsius',
+      '3': 2,
+      '4': 1,
+      '5': 17,
+      '10': 'maxTemperatureTenthsCelsius'
+    },
+    {
+      '1': 'min_humidity_tenths_percent',
+      '3': 3,
+      '4': 1,
+      '5': 13,
+      '10': 'minHumidityTenthsPercent'
+    },
+    {
+      '1': 'max_humidity_tenths_percent',
+      '3': 4,
+      '4': 1,
+      '5': 13,
+      '10': 'maxHumidityTenthsPercent'
+    },
+  ],
+};
+
+/// Descriptor for `EnvironmentLimits`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List environmentLimitsDescriptor = $convert.base64Decode(
+    'ChFFbnZpcm9ubWVudExpbWl0cxJDCh5taW5fdGVtcGVyYXR1cmVfdGVudGhzX2NlbHNpdXMYAS'
+    'ABKBFSG21pblRlbXBlcmF0dXJlVGVudGhzQ2Vsc2l1cxJDCh5tYXhfdGVtcGVyYXR1cmVfdGVu'
+    'dGhzX2NlbHNpdXMYAiABKBFSG21heFRlbXBlcmF0dXJlVGVudGhzQ2Vsc2l1cxI9ChttaW5faH'
+    'VtaWRpdHlfdGVudGhzX3BlcmNlbnQYAyABKA1SGG1pbkh1bWlkaXR5VGVudGhzUGVyY2VudBI9'
+    'ChttYXhfaHVtaWRpdHlfdGVudGhzX3BlcmNlbnQYBCABKA1SGG1heEh1bWlkaXR5VGVudGhzUG'
+    'VyY2VudA==');
 
 @$core.Deprecated('Use bridgeStatusDescriptor instead')
 const BridgeStatus$json = {

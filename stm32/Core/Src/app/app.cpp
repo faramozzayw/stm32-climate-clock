@@ -4,6 +4,7 @@
 
 #include "telemetry.hpp"
 #include "utils/calendar_time.h"
+#include "utils/temperature.h"
 
 namespace climate_clock
 {
@@ -67,12 +68,14 @@ App::App(
 	lcd1602_t &lcd,
 	hw479_t &temperature_indicator,
 	ds3231_t &rtc,
+	Bmx280 &environment_sensor,
 	at24c256_t &eeprom,
 	I2C_HandleTypeDef &eeprom_i2c,
 	uart_command_receiver_t &command_receiver,
 	hal_uart_transport_t &telemetry_transport)
 	: indicator_driver_(temperature_indicator),
 	  rtc_(rtc),
+	  environment_sensor_(environment_sensor),
 	  eeprom_(eeprom),
 	  eeprom_i2c_(eeprom_i2c),
 	  command_receiver_(command_receiver),
@@ -98,6 +101,21 @@ bool App::initialize()
 
 	set_connection_state(BLE_CONNECTION_STATE_DISCONNECTED);
 
+	const auto sensor_status = environment_sensor_.initialize();
+	if (sensor_status != Bmx280Status::ok)
+	{
+		std::printf(
+			"BME/BMP280 initialization failed: %u\r\n",
+			static_cast<unsigned int>(sensor_status));
+		return false;
+	}
+
+	std::printf(
+		"%s initialized\r\n",
+		environment_sensor_.model() == Bmx280Model::bme280
+			? "BME280"
+			: "BMP280");
+
 	const auto eeprom_status = at24c256_init(
 		&eeprom_,
 		&eeprom_i2c_,
@@ -111,12 +129,22 @@ bool App::initialize()
 		if (settings_.load(
 				min_temperature_,
 				max_temperature_,
+				min_humidity_tenths_percent_,
+				max_humidity_tenths_percent_,
 				temperature_unit_))
 		{
 			std::printf(
-				"Loaded temperature settings: min=%d, max=%d, unit=%c\r\n",
+				"Loaded settings: temperature=%d..%d, humidity=%u.%u..%u.%u%%, unit=%c\r\n",
 				static_cast<int>(min_temperature_),
 				static_cast<int>(max_temperature_),
+				static_cast<unsigned int>(
+					min_humidity_tenths_percent_ / 10U),
+				static_cast<unsigned int>(
+					min_humidity_tenths_percent_ % 10U),
+				static_cast<unsigned int>(
+					max_humidity_tenths_percent_ / 10U),
+				static_cast<unsigned int>(
+					max_humidity_tenths_percent_ % 10U),
 				temperature_unit_ == TEMPERATURE_UNIT_FAHRENHEIT
 					? TEMPERATURE_UNIT_FAHRENHEIT_SYMBOL
 					: TEMPERATURE_UNIT_CELSIUS_SYMBOL);
@@ -124,21 +152,33 @@ bool App::initialize()
 		else
 		{
 			std::printf(
-				"No valid temperature settings; using defaults: min=%d, max=%d, unit=%c\r\n",
+				"No valid settings; using defaults: temperature=%d..%d, humidity=%u.%u..%u.%u%%, unit=%c\r\n",
 				static_cast<int>(min_temperature_),
 				static_cast<int>(max_temperature_),
+				static_cast<unsigned int>(
+					min_humidity_tenths_percent_ / 10U),
+				static_cast<unsigned int>(
+					min_humidity_tenths_percent_ % 10U),
+				static_cast<unsigned int>(
+					max_humidity_tenths_percent_ / 10U),
+				static_cast<unsigned int>(
+					max_humidity_tenths_percent_ % 10U),
 				TEMPERATURE_UNIT_CELSIUS_SYMBOL);
 		}
 	}
 	else
 	{
 		std::printf(
-			"AT24C256 unavailable; using default temperature settings\r\n");
+			"AT24C256 unavailable; using default settings\r\n");
 	}
 
 	uart_command_receiver_init(&command_receiver_);
 	command_receiver_.values.min_temp = min_temperature_;
 	command_receiver_.values.max_temp = max_temperature_;
+	command_receiver_.values.min_humidity_tenths_percent =
+		min_humidity_tenths_percent_;
+	command_receiver_.values.max_humidity_tenths_percent =
+		max_humidity_tenths_percent_;
 	command_receiver_.values.temperature_unit =
 		temperature_unit_ == TEMPERATURE_UNIT_FAHRENHEIT
 			? DEVICE_TEMPERATURE_UNIT_FAHRENHEIT
@@ -158,17 +198,43 @@ void App::update()
 {
 	std::uint8_t telemetry_frame[telemetry::max_frame_size];
 	std::uint16_t telemetry_frame_length;
+	Bmx280Measurement measurement{};
 
 	const auto time = ds3231_get_time(&rtc_);
-	ds3231_force_temp_conv(&rtc_);
-	const auto temperature = ds3231_get_temp_fixed(&rtc_);
+	const auto sensor_status = environment_sensor_.read(measurement);
+	if (sensor_status != Bmx280Status::ok)
+	{
+		std::printf(
+			"BME/BMP280 read failed: %u\r\n",
+			static_cast<unsigned int>(sensor_status));
+		return;
+	}
 
-	if (telemetry::encode_temperature(
-			temperature,
-			min_temperature_,
-			max_temperature_,
-			telemetry_frame,
-			telemetry_frame_length))
+	const auto temperature = centi_celsius_to_tenths(
+		measurement.temperature_centi_celsius);
+
+	if (limits_telemetry_pending_)
+	{
+		if (telemetry::encode_limits(
+				min_temperature_,
+				max_temperature_,
+				min_humidity_tenths_percent_,
+				max_humidity_tenths_percent_,
+				telemetry_frame,
+				telemetry_frame_length) &&
+			hal_uart_transport_send(
+				&telemetry_transport_,
+				telemetry_frame,
+				telemetry_frame_length))
+		{
+			limits_telemetry_pending_ = false;
+		}
+	}
+	else if (telemetry::encode_measurement(
+				 temperature,
+				 measurement.humidity_milli_percent,
+				 telemetry_frame,
+				 telemetry_frame_length))
 	{
 		hal_uart_transport_send(
 			&telemetry_transport_,
@@ -176,7 +242,11 @@ void App::update()
 			telemetry_frame_length);
 	}
 
-	screen_.update(time, temperature, temperature_unit_);
+	screen_.update(
+		time,
+		temperature,
+		temperature_unit_,
+		measurement.humidity_milli_percent);
 	temperature_indicator_.update(
 		temperature,
 		min_temperature_,
@@ -190,6 +260,7 @@ void App::apply_received_messages()
 	if (values.min_temp_updated)
 	{
 		min_temperature_ = values.min_temp;
+		limits_telemetry_pending_ = true;
 		values.min_temp_updated = false;
 
 		if (eeprom_ready_ &&
@@ -203,6 +274,7 @@ void App::apply_received_messages()
 	if (values.max_temp_updated)
 	{
 		max_temperature_ = values.max_temp;
+		limits_telemetry_pending_ = true;
 		values.max_temp_updated = false;
 
 		if (eeprom_ready_ &&
@@ -210,6 +282,36 @@ void App::apply_received_messages()
 				max_temperature_) != AT24C256_OK)
 		{
 			std::printf("Failed to save maximum temperature\r\n");
+		}
+	}
+
+	if (values.min_humidity_updated)
+	{
+		min_humidity_tenths_percent_ =
+			values.min_humidity_tenths_percent;
+		limits_telemetry_pending_ = true;
+		values.min_humidity_updated = false;
+
+		if (eeprom_ready_ &&
+			settings_.save_min_humidity(
+				min_humidity_tenths_percent_) != AT24C256_OK)
+		{
+			std::printf("Failed to save minimum humidity\r\n");
+		}
+	}
+
+	if (values.max_humidity_updated)
+	{
+		max_humidity_tenths_percent_ =
+			values.max_humidity_tenths_percent;
+		limits_telemetry_pending_ = true;
+		values.max_humidity_updated = false;
+
+		if (eeprom_ready_ &&
+			settings_.save_max_humidity(
+				max_humidity_tenths_percent_) != AT24C256_OK)
+		{
+			std::printf("Failed to save maximum humidity\r\n");
 		}
 	}
 
@@ -274,6 +376,8 @@ void App::set_temperature_unit(temperature_unit_t unit)
 void App::set_connection_state(ble_connection_state_t state)
 {
 	connection_state_ = state;
+	limits_telemetry_pending_ =
+		state == BLE_CONNECTION_STATE_CONNECTED;
 	update_connection_led();
 }
 

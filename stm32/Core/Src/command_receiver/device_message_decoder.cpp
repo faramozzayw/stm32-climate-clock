@@ -10,6 +10,8 @@ namespace climate_clock
 {
 namespace
 {
+constexpr std::uint32_t maximum_humidity_tenths_percent = 1000U;
+
 DecodeResult decode_command(const device_DeviceCommand &command)
 {
 	switch (command.which_command)
@@ -37,6 +39,30 @@ DecodeResult decode_command(const device_DeviceCommand &command)
 			SetMinimumTemperature{
 				static_cast<std::int16_t>(
 					command.command.set_min_temp.value)}});
+
+	case device_DeviceCommand_set_max_humidity_tag:
+		if (command.command.set_max_humidity.value >
+			maximum_humidity_tenths_percent)
+		{
+			return DecodeResult::failure(DecodeError::value_out_of_range);
+		}
+
+		return DecodeResult::success(DecodedDeviceMessage{
+			SetMaximumHumidity{
+				static_cast<std::uint16_t>(
+					command.command.set_max_humidity.value)}});
+
+	case device_DeviceCommand_set_min_humidity_tag:
+		if (command.command.set_min_humidity.value >
+			maximum_humidity_tenths_percent)
+		{
+			return DecodeResult::failure(DecodeError::value_out_of_range);
+		}
+
+		return DecodeResult::success(DecodedDeviceMessage{
+			SetMinimumHumidity{
+				static_cast<std::uint16_t>(
+					command.command.set_min_humidity.value)}});
 
 	case device_DeviceCommand_set_current_time_tag:
 		return DecodeResult::success(DecodedDeviceMessage{

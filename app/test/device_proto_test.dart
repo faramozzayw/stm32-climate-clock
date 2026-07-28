@@ -15,6 +15,8 @@ void main() {
           unit: TemperatureUnit.TEMPERATURE_UNIT_FAHRENHEIT,
         ),
       ),
+      DeviceCommand(setMaxHumidity: SetMaxHumidity(value: 600)),
+      DeviceCommand(setMinHumidity: SetMinHumidity(value: 300)),
     ];
     final messages = [
       for (final command in commands) DeviceMessage(command: command),
@@ -52,6 +54,24 @@ void main() {
       0x31,
     ]);
     expect(messages[3].writeToBuffer(), [0x0A, 0x04, 0x22, 0x02, 0x08, 0x01]);
+    expect(messages[4].writeToBuffer(), [
+      0x0A,
+      0x05,
+      0x2A,
+      0x03,
+      0x08,
+      0xD8,
+      0x04,
+    ]);
+    expect(messages[5].writeToBuffer(), [
+      0x0A,
+      0x05,
+      0x32,
+      0x03,
+      0x08,
+      0xAC,
+      0x02,
+    ]);
 
     expect(
       DeviceMessage.fromBuffer(
@@ -93,21 +113,57 @@ void main() {
       ).command.setTemperatureUnit.unit,
       TemperatureUnit.TEMPERATURE_UNIT_FAHRENHEIT,
     );
+    expect(
+      DeviceMessage.fromBuffer(
+        messages[4].writeToBuffer(),
+      ).command.setMaxHumidity.value,
+      600,
+    );
+    expect(
+      DeviceMessage.fromBuffer(
+        messages[5].writeToBuffer(),
+      ).command.setMinHumidity.value,
+      300,
+    );
   });
 
-  test('serializes and parses device telemetry', () {
+  test('serializes and parses environment measurement telemetry', () {
     final telemetry = DeviceTelemetry(
-      currentTemp: -55,
-      minTemp: 100,
-      maxTemp: 300,
+      measurement: EnvironmentMeasurement(
+        temperatureTenthsCelsius: -55,
+        humidityMilliPercent: 60075,
+      ),
     );
 
     final message = DeviceMessage(telemetry: telemetry);
     final decoded = DeviceMessage.fromBuffer(message.writeToBuffer()).telemetry;
 
-    expect(decoded.currentTemp, -55);
-    expect(decoded.minTemp, 100);
-    expect(decoded.maxTemp, 300);
+    expect(message.writeToBuffer().length, lessThanOrEqualTo(20));
+    expect(decoded.hasMeasurement(), isTrue);
+    expect(decoded.measurement.temperatureTenthsCelsius, -55);
+    expect(decoded.measurement.hasHumidityMilliPercent(), isTrue);
+    expect(decoded.measurement.humidityMilliPercent, 60075);
+  });
+
+  test('serializes and parses environment limits telemetry', () {
+    final telemetry = DeviceTelemetry(
+      limits: EnvironmentLimits(
+        minTemperatureTenthsCelsius: 100,
+        maxTemperatureTenthsCelsius: 300,
+        minHumidityTenthsPercent: 300,
+        maxHumidityTenthsPercent: 650,
+      ),
+    );
+
+    final message = DeviceMessage(telemetry: telemetry);
+    final decoded = DeviceMessage.fromBuffer(message.writeToBuffer()).telemetry;
+
+    expect(message.writeToBuffer().length, lessThanOrEqualTo(20));
+    expect(decoded.hasLimits(), isTrue);
+    expect(decoded.limits.minTemperatureTenthsCelsius, 100);
+    expect(decoded.limits.maxTemperatureTenthsCelsius, 300);
+    expect(decoded.limits.minHumidityTenthsPercent, 300);
+    expect(decoded.limits.maxHumidityTenthsPercent, 650);
   });
 
   test('serializes and parses bridge status', () {

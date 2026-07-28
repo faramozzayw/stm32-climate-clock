@@ -2,6 +2,7 @@
 #define INC_APP_SCREEN_HPP_
 
 #include <cstdint>
+#include <optional>
 
 #include "drivers/lcd1602.h"
 #include "utils/calendar_time.h"
@@ -18,7 +19,8 @@ class Screen
 	void update(
 		const calendar_time_t &time,
 		std::int16_t temperature_celsius,
-		temperature_unit_t unit);
+		temperature_unit_t unit,
+		const std::optional<std::uint32_t> &humidity_milli_percent);
 
   private:
 	lcd1602_t &lcd_;

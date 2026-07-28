@@ -20,6 +20,16 @@ struct SetMinimumTemperature
 	std::int16_t temperature;
 };
 
+struct SetMaximumHumidity
+{
+	std::uint16_t humidity_tenths_percent;
+};
+
+struct SetMinimumHumidity
+{
+	std::uint16_t humidity_tenths_percent;
+};
+
 struct SetCurrentTime
 {
 	std::uint64_t time_ms;
@@ -38,6 +48,8 @@ struct BleConnectionStateChanged
 using DecodedDeviceMessage = std::variant<
 	SetMaximumTemperature,
 	SetMinimumTemperature,
+	SetMaximumHumidity,
+	SetMinimumHumidity,
 	SetCurrentTime,
 	SetTemperatureUnit,
 	BleConnectionStateChanged>;

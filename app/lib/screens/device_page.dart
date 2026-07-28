@@ -5,18 +5,19 @@ import 'package:flutter/material.dart';
 
 import '../generated/device.pb.dart';
 import '../services/device_ble_service.dart';
-import '../services/temperature_notification_service.dart';
+import '../services/environment_notification_service.dart';
+import '../utils/humidity.dart';
 import '../utils/temperature.dart';
 import '../widgets/connection_card.dart';
-import '../widgets/current_temperature_card.dart';
+import '../widgets/current_conditions_card.dart';
+import '../widgets/limit_command.dart';
 import '../widgets/page_header.dart';
-import '../widgets/temperature_command.dart';
 import '../widgets/time_sync_card.dart';
 
 class DevicePage extends StatefulWidget {
   const DevicePage({required this.notifications, super.key});
 
-  final TemperatureNotificationService notifications;
+  final EnvironmentNotificationService notifications;
 
   @override
   State<DevicePage> createState() => _DevicePageState();
@@ -25,6 +26,8 @@ class DevicePage extends StatefulWidget {
 class _DevicePageState extends State<DevicePage> {
   final _maxController = TextEditingController(text: '25.0');
   final _minController = TextEditingController(text: '15.5');
+  final _maxHumidityController = TextEditingController(text: '60.0');
+  final _minHumidityController = TextEditingController(text: '30.0');
   final _ble = DeviceBleService();
 
   StreamSubscription<bool>? _connectionSubscription;
@@ -33,8 +36,11 @@ class _DevicePageState extends State<DevicePage> {
   bool _fahrenheit = false;
   String _status = 'Disconnected';
   int? _currentTemperature;
+  int? _currentHumidityMilliPercent;
   int? _deviceMinTemperature;
   int? _deviceMaxTemperature;
+  int? _deviceMinHumidityTenthsPercent;
+  int? _deviceMaxHumidityTenthsPercent;
 
   bool get _connected => _ble.isConnected;
 
@@ -46,10 +52,13 @@ class _DevicePageState extends State<DevicePage> {
         setState(() {
           _status = 'Disconnected';
           _currentTemperature = null;
+          _currentHumidityMilliPercent = null;
           _deviceMinTemperature = null;
           _deviceMaxTemperature = null;
+          _deviceMinHumidityTenthsPercent = null;
+          _deviceMaxHumidityTenthsPercent = null;
         });
-        widget.notifications.resetTemperatureState();
+        widget.notifications.reset();
       }
     });
     _telemetrySubscription = _ble.telemetry.listen(
@@ -65,6 +74,8 @@ class _DevicePageState extends State<DevicePage> {
     unawaited(_ble.dispose());
     _maxController.dispose();
     _minController.dispose();
+    _maxHumidityController.dispose();
+    _minHumidityController.dispose();
     super.dispose();
   }
 
@@ -133,6 +144,25 @@ class _DevicePageState extends State<DevicePage> {
     await _send(command, 'Current device time sent');
   }
 
+  Future<void> _sendHumidity({required bool maximum}) async {
+    final controller = maximum
+        ? _maxHumidityController
+        : _minHumidityController;
+    final tenthsPercent = _parseHumidity(controller.text);
+    if (tenthsPercent == null) {
+      _showMessage('Enter humidity from 0.0% to 100.0%.');
+      return;
+    }
+
+    final command = maximum
+        ? DeviceCommand(setMaxHumidity: SetMaxHumidity(value: tenthsPercent))
+        : DeviceCommand(setMinHumidity: SetMinHumidity(value: tenthsPercent));
+    await _send(
+      command,
+      maximum ? 'Maximum humidity sent' : 'Minimum humidity sent',
+    );
+  }
+
   Future<void> _sendTemperatureUnit({bool announce = true}) async {
     final command = DeviceCommand(
       setTemperatureUnit: SetTemperatureUnit(
@@ -156,7 +186,7 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   int? _parseTemperature(String text) {
-    final displayedTenths = _parseDisplayedTemperature(text);
+    final displayedTenths = _parseDisplayedTenths(text);
     if (displayedTenths == null) return null;
 
     final celsiusTenths = _toCelsius(displayedTenths, _fahrenheit);
@@ -165,7 +195,15 @@ class _DevicePageState extends State<DevicePage> {
         : null;
   }
 
-  int? _parseDisplayedTemperature(String text) {
+  int? _parseHumidity(String text) {
+    final humidityTenthsPercent = _parseDisplayedTenths(text);
+    if (humidityTenthsPercent == null) return null;
+    return humidityTenthsPercent >= 0 && humidityTenthsPercent <= 1000
+        ? humidityTenthsPercent
+        : null;
+  }
+
+  int? _parseDisplayedTenths(String text) {
     if (!RegExp(r'^-?\d+(?:\.\d)?$').hasMatch(text.trim())) return null;
     final value = double.tryParse(text.trim());
     if (value == null) return null;
@@ -189,7 +227,7 @@ class _DevicePageState extends State<DevicePage> {
     bool fromFahrenheit,
     bool toFahrenheit,
   ) {
-    final displayedTenths = _parseDisplayedTemperature(controller.text);
+    final displayedTenths = _parseDisplayedTenths(controller.text);
     if (displayedTenths == null) return;
 
     final celsiusTenths = _toCelsius(displayedTenths, fromFahrenheit);
@@ -210,25 +248,69 @@ class _DevicePageState extends State<DevicePage> {
   void _applyTelemetry(DeviceTelemetry telemetry) {
     if (!mounted) return;
 
+    switch (telemetry.whichData()) {
+      case DeviceTelemetry_Data.measurement:
+        _applyMeasurement(telemetry.measurement);
+      case DeviceTelemetry_Data.limits:
+        _applyLimits(telemetry.limits);
+      case DeviceTelemetry_Data.notSet:
+        return;
+    }
+  }
+
+  void _applyMeasurement(EnvironmentMeasurement measurement) {
+    final currentHumidity = measurement.hasHumidityMilliPercent()
+        ? measurement.humidityMilliPercent
+        : null;
+
     setState(() {
-      _currentTemperature = telemetry.currentTemp;
-      _deviceMinTemperature = telemetry.minTemp;
-      _deviceMaxTemperature = telemetry.maxTemp;
+      _currentTemperature = measurement.temperatureTenthsCelsius;
+      _currentHumidityMilliPercent = currentHumidity;
     });
 
-    unawaited(
-      widget.notifications
-          .updateTemperature(
-            currentTemperature: telemetry.currentTemp,
-            minTemperature: telemetry.minTemp,
-            maxTemperature: telemetry.maxTemp,
-            fahrenheit: _fahrenheit,
-          )
-          .catchError(
-            (Object error) =>
-                debugPrint('Temperature notification failed: $error'),
-          ),
-    );
+    final minTemperature = _deviceMinTemperature;
+    final maxTemperature = _deviceMaxTemperature;
+    if (minTemperature != null && maxTemperature != null) {
+      unawaited(
+        widget.notifications
+            .updateTemperature(
+              currentTemperature: measurement.temperatureTenthsCelsius,
+              minTemperature: minTemperature,
+              maxTemperature: maxTemperature,
+              fahrenheit: _fahrenheit,
+            )
+            .catchError(
+              (Object error) =>
+                  debugPrint('Temperature notification failed: $error'),
+            ),
+      );
+    }
+
+    final minHumidity = _deviceMinHumidityTenthsPercent;
+    final maxHumidity = _deviceMaxHumidityTenthsPercent;
+    if (currentHumidity != null && minHumidity != null && maxHumidity != null) {
+      unawaited(
+        widget.notifications
+            .updateHumidity(
+              currentHumidityMilliPercent: currentHumidity,
+              minHumidityTenthsPercent: minHumidity,
+              maxHumidityTenthsPercent: maxHumidity,
+            )
+            .catchError(
+              (Object error) =>
+                  debugPrint('Humidity notification failed: $error'),
+            ),
+      );
+    }
+  }
+
+  void _applyLimits(EnvironmentLimits limits) {
+    setState(() {
+      _deviceMinTemperature = limits.minTemperatureTenthsCelsius;
+      _deviceMaxTemperature = limits.maxTemperatureTenthsCelsius;
+      _deviceMinHumidityTenthsPercent = limits.minHumidityTenthsPercent;
+      _deviceMaxHumidityTenthsPercent = limits.maxHumidityTenthsPercent;
+    });
   }
 
   String _friendlyError(Object error) {
@@ -273,8 +355,9 @@ class _DevicePageState extends State<DevicePage> {
                 onPressed: _busy ? null : (_connected ? _disconnect : _connect),
               ),
               const SizedBox(height: 14),
-              CurrentTemperatureCard(
+              CurrentConditionsCard(
                 temperatureTenths: _currentTemperature,
+                humidityMilliPercent: _currentHumidityMilliPercent,
                 fahrenheit: _fahrenheit,
               ),
               const SizedBox(height: 26),
@@ -283,32 +366,83 @@ class _DevicePageState extends State<DevicePage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
-              TemperatureCommand(
+              LimitCommand(
                 label: 'Maximum temperature',
                 hint: 'Upper comfort limit',
                 icon: Icons.local_fire_department_rounded,
                 accent: const Color(0xFFFF756C),
                 surface: const Color(0xFFFFF0EE),
                 controller: _maxController,
-                currentLimitTenths: _deviceMaxTemperature,
-                fahrenheit: _fahrenheit,
+                currentLimitText: _deviceMaxTemperature == null
+                    ? '--.- °${_fahrenheit ? 'F' : 'C'}'
+                    : formatTemperatureWithUnit(
+                        _deviceMaxTemperature!,
+                        fahrenheit: _fahrenheit,
+                      ),
+                suffix: '°${_fahrenheit ? 'F' : 'C'}',
+                allowSigned: true,
                 onSend: _connected
                     ? () => _sendTemperature(maximum: true)
                     : null,
               ),
               const SizedBox(height: 14),
-              TemperatureCommand(
+              LimitCommand(
                 label: 'Minimum temperature',
                 hint: 'Lower comfort limit',
                 icon: Icons.ac_unit_rounded,
                 accent: const Color(0xFF5799E5),
                 surface: const Color(0xFFECF5FF),
                 controller: _minController,
-                currentLimitTenths: _deviceMinTemperature,
-                fahrenheit: _fahrenheit,
+                currentLimitText: _deviceMinTemperature == null
+                    ? '--.- °${_fahrenheit ? 'F' : 'C'}'
+                    : formatTemperatureWithUnit(
+                        _deviceMinTemperature!,
+                        fahrenheit: _fahrenheit,
+                      ),
+                suffix: '°${_fahrenheit ? 'F' : 'C'}',
+                allowSigned: true,
                 onSend: _connected
                     ? () => _sendTemperature(maximum: false)
                     : null,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Humidity range',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              LimitCommand(
+                label: 'Maximum humidity',
+                hint: 'Upper comfort limit',
+                icon: Icons.water_drop_rounded,
+                accent: const Color(0xFF388FA8),
+                surface: const Color(0xFFEAF8FB),
+                controller: _maxHumidityController,
+                currentLimitText: _deviceMaxHumidityTenthsPercent == null
+                    ? '--.-%'
+                    : formatHumidityTenthsPercent(
+                        _deviceMaxHumidityTenthsPercent!,
+                      ),
+                suffix: '%',
+                allowSigned: false,
+                onSend: _connected ? () => _sendHumidity(maximum: true) : null,
+              ),
+              const SizedBox(height: 14),
+              LimitCommand(
+                label: 'Minimum humidity',
+                hint: 'Lower comfort limit',
+                icon: Icons.water_drop_outlined,
+                accent: const Color(0xFF597CBF),
+                surface: const Color(0xFFEEF2FC),
+                controller: _minHumidityController,
+                currentLimitText: _deviceMinHumidityTenthsPercent == null
+                    ? '--.-%'
+                    : formatHumidityTenthsPercent(
+                        _deviceMinHumidityTenthsPercent!,
+                      ),
+                suffix: '%',
+                allowSigned: false,
+                onSend: _connected ? () => _sendHumidity(maximum: false) : null,
               ),
               const SizedBox(height: 18),
               TimeSyncCard(enabled: _connected, onPressed: _sendCurrentTime),

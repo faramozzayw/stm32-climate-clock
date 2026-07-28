@@ -45,7 +45,7 @@ class PageHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Live temperature, thresholds, and alerts',
+                'Live temperature and humidity, limits, and alerts',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF777287),
                 ),

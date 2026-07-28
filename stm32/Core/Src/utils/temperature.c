@@ -1,11 +1,13 @@
 #include "utils/temperature.h"
 
-#include <math.h>
 #include <stdio.h>
 
-int16_t tempToFixed(float temp)
+int16_t centi_celsius_to_tenths(int32_t centi_celsius)
 {
-	return (int16_t)lroundf(temp * 10.0f);
+	return (int16_t)((centi_celsius >= 0
+							 ? centi_celsius + 5
+							 : centi_celsius - 5) /
+					 10);
 }
 
 int16_t celsius_to_fahrenheit_fixed(int16_t celsius_tenths)
