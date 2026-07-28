@@ -40,12 +40,12 @@ class PageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Temperature Controller',
+                'ClimateClock',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 2),
               Text(
-                'Keep your space feeling just right',
+                'Live temperature, thresholds, and alerts',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF777287),
                 ),
