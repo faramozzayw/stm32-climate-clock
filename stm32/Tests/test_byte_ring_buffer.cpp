@@ -3,8 +3,6 @@ extern "C"
 #include "unity.h"
 }
 
-#include <iterator>
-
 #include "utils/byte_ring_buffer.hpp"
 
 using climate_clock::ByteRingBuffer;
@@ -14,7 +12,7 @@ static void test_byte_ring_buffer_preserves_fifo_order()
 	std::uint8_t storage[4]{};
 	volatile std::uint16_t head{};
 	volatile std::uint16_t tail{};
-	ByteRingBuffer buffer{storage, std::size(storage), head, tail};
+	ByteRingBuffer buffer{storage, head, tail};
 	std::uint8_t byte{};
 
 	buffer.reset();
@@ -34,7 +32,7 @@ static void test_byte_ring_buffer_rejects_full_and_wraps()
 	std::uint8_t storage[4]{};
 	volatile std::uint16_t head{};
 	volatile std::uint16_t tail{};
-	ByteRingBuffer buffer{storage, std::size(storage), head, tail};
+	ByteRingBuffer buffer{storage, head, tail};
 	std::uint8_t byte{};
 
 	buffer.reset();

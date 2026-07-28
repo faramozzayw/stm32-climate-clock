@@ -1,7 +1,6 @@
 #include "command_receiver/uart_command_receiver.h"
 
 #include <cstdio>
-#include <iterator>
 #include <variant>
 
 #include "command_receiver/device_message_decoder.hpp"
@@ -20,7 +19,6 @@ static ByteRingBuffer rx_buffer(uart_command_receiver_t &commands)
 {
 	return ByteRingBuffer{
 		commands.rx.storage,
-		std::size(commands.rx.storage),
 		commands.rx.head,
 		commands.rx.tail};
 }
