@@ -34,13 +34,13 @@ to update its UI and temperature alerts.
 ### Embedded controller
 
 - **NUCLEO-L073RZ** development board with an **STM32L073RZ** MCU
-- **C11** application and driver code
+- **C11 and C++17** application and driver code
 - **STM32CubeIDE**, **STM32CubeMX**, and the **STM32 HAL**
 - Interrupt-driven UART reception with a single-producer/single-consumer ring
   buffer
 - USART1 for framed ESP32 communication and USART2 for serial debug logs
 - PWM outputs for the RGB temperature indicator and BLE connection animation
-- Host-side C tests built with GCC and
+- Host-side C and C++ tests built with GCC and
   [ThrowTheSwitch Unity](https://github.com/ThrowTheSwitch/Unity), using
   `-Wall -Wextra -Werror`
 
@@ -201,7 +201,8 @@ just apk
 Configure, build, and run the STM32 host test suite:
 
 ```sh
-cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja -DCMAKE_C_COMPILER=gcc
+cmake -S stm32/Tests -B stm32/Tests/.build/cmake -G Ninja \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
 cmake --build stm32/Tests/.build/cmake
 ctest --test-dir stm32/Tests/.build/cmake --output-on-failure
 ```

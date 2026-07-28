@@ -61,6 +61,7 @@ jobs:
           -B stm32/Tests/.build/ci
           -G Ninja
           -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_CXX_COMPILER=g++
 
       - name: Build
         run: cmake --build stm32/Tests/.build/ci
